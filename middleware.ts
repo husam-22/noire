@@ -24,15 +24,17 @@ function localePrefix(pathname: string): string {
 export default async function middleware(request: NextRequest) {
   const response = handleI18nRouting(request);
 
-  // Without Supabase configured the app runs on fixtures and no auth boundary exists
-  // (preview mode). The README documents that `/admin` is unprotected in this mode.
+  const path = stripLocale(request.nextUrl.pathname);
+  const prefix = localePrefix(request.nextUrl.pathname);
+
+  // Supabase is the only identity provider. If it is not configured, fail closed:
+  // protected areas are never reachable without a verified session.
   if (!hasSupabasePublicConfig()) {
-    return response;
+    const guarded = PROTECTED_PREFIXES.some((p) => path === p || path.startsWith(`${p}/`));
+    return guarded ? NextResponse.rewrite(new URL(`${prefix}/404`, request.url), { status: 404 }) : response;
   }
 
   const { user } = await refreshSupabaseSession(request, response);
-  const path = stripLocale(request.nextUrl.pathname);
-  const prefix = localePrefix(request.nextUrl.pathname);
 
   const needsUser = PROTECTED_PREFIXES.some((p) => path === p || path.startsWith(`${p}/`));
   if (needsUser && !user) {

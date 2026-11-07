@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { subscribeNewsletterAction } from '@/lib/actions/newsletter';
 import { Link } from '@/i18n/navigation';
 import { ArrowUpRight, ArrowRight, Check } from 'lucide-react';
 import { Container } from '@/components/layout';
@@ -28,7 +29,9 @@ export function GlobalFooter({ categories, collections }: GlobalFooterProps) {
   const [emailError, setEmailError] = useState('');
   const [isSubscribed, setIsSubscribed] = useState(false);
 
-  const handleSubscribe = (event: React.FormEvent<HTMLFormElement>) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubscribe = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const trimmed = email.trim();
 
@@ -38,9 +41,17 @@ export function GlobalFooter({ categories, collections }: GlobalFooterProps) {
     }
 
     setEmailError('');
+    setIsSubmitting(true);
+    const result = await subscribeNewsletterAction(trimmed, 'footer');
+    setIsSubmitting(false);
+
+    if (!result.ok) {
+      setEmailError(t('subscribeFailed'));
+      return;
+    }
+
     setIsSubscribed(true);
     setEmail('');
-
     addToast({
       type: 'success',
       title: t('toastTitle'),
@@ -124,7 +135,7 @@ export function GlobalFooter({ categories, collections }: GlobalFooterProps) {
                   type="email"
                   variant="editorial"
                   label={t('emailLabel')}
-                  codeLabel="LOCAL PREVIEW // NO MAIL SENT"
+                  codeLabel={t('emailCode')}
                   placeholder={t('emailPlaceholder')}
                   value={email}
                   onChange={(e) => {
@@ -136,12 +147,13 @@ export function GlobalFooter({ categories, collections }: GlobalFooterProps) {
 
                 <div className="flex flex-wrap items-center justify-between gap-4 pt-2">
                   <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-foreground-subtle">
-                    {t('demoOnly')}
+                    {t('privacyNote')}
                   </span>
                   <Button
                     type="submit"
                     variant="primary"
                     size="sm"
+                    isLoading={isSubmitting}
                     rightIcon={
                       isSubscribed ? (
                         <Check className="h-3.5 w-3.5" />
@@ -150,7 +162,7 @@ export function GlobalFooter({ categories, collections }: GlobalFooterProps) {
                       )
                     }
                   >
-                    {isSubscribed ? t('previewed') : t('previewRequest')}
+                    {isSubscribed ? t('subscribed') : t('subscribe')}
                   </Button>
                 </div>
               </form>
@@ -238,7 +250,7 @@ export function GlobalFooter({ categories, collections }: GlobalFooterProps) {
                 {[
                   { label: t('linkAccount'), href: '/account' },
                   { label: t('linkWishlist'), href: '/wishlist' },
-                  { label: t('linkShipping'), href: '/checkout' },
+                  { label: t('linkShipping'), href: '/cart' },
                 ].map((item) => (
                   <li key={item.label}>
                     <Link

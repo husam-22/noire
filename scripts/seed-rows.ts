@@ -7,8 +7,8 @@
  * emitted as idempotent SQL for the dashboard SQL Editor / CLI.
  */
 import type { TablesInsert } from '../types/supabase';
-import { MOCK_CATEGORIES, MOCK_COLLECTIONS, MOCK_JOURNAL_ARTICLES, MOCK_PRODUCTS, MOCK_DISCOUNTS } from '../lib/data';
-import { DEFAULT_SHIPPING_METHODS } from '../lib/mock-api';
+import { MOCK_CATEGORIES, MOCK_COLLECTIONS, MOCK_JOURNAL_ARTICLES, MOCK_PRODUCTS, MOCK_DISCOUNTS, SEED_SHIPPING_METHODS } from '../lib/data';
+
 import {
   categoryToRow,
   collectionToRow,
@@ -135,10 +135,18 @@ export function buildSeedBatches(): SeedBatch[] {
   }));
 
   const settings: TablesInsert<'settings'>[] = [
+    { key: 'store.name', value: 'NOIRÉ' },
     { key: 'store.currency', value: 'USD' },
     { key: 'store.free_shipping_threshold', value: 500 },
     { key: 'store.tax.enabled', value: false },
-    { key: 'checkout.payment_provider', value: 'demo' },
+    { key: 'store.support_email', value: '' },
+    { key: 'store.support_phone', value: '' },
+    { key: 'checkout.payment_provider', value: 'manual' },
+    { key: 'payments.cash_on_delivery_enabled', value: true },
+    { key: 'payments.bank_transfer_enabled', value: true },
+    { key: 'payments.bank_transfer_instructions', value: '' },
+    { key: 'content.announcement', value: '' },
+    { key: 'content.featured_collection_id', value: null },
   ];
 
   return [
@@ -150,7 +158,7 @@ export function buildSeedBatches(): SeedBatch[] {
     { table: 'category_translations', conflict: 'category_id,locale', rows: categoryTranslations },
     { table: 'collection_translations', conflict: 'collection_id,locale', rows: collectionTranslations },
     { table: 'journal_articles', conflict: 'id', rows: journal },
-    { table: 'shipping_methods', conflict: 'id', rows: DEFAULT_SHIPPING_METHODS.map((m, i) => shippingMethodToRow(m, i)) },
+    { table: 'shipping_methods', conflict: 'id', rows: SEED_SHIPPING_METHODS.map((m, i) => shippingMethodToRow(m, i)) },
     { table: 'discounts', conflict: 'code', rows: discounts },
     { table: 'settings', conflict: 'key', rows: settings },
   ];

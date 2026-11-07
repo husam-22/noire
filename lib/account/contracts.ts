@@ -40,10 +40,18 @@ export type CustomerAddressInput = Omit<
   isDefaultBilling?: boolean;
 };
 
+/** Everything the account workspace needs, loaded server-side under RLS. */
+export interface CustomerAccountSnapshot {
+  profile: CustomerProfileRecord | null;
+  orders: Order[];
+  addresses: Address[];
+  preferences: CustomerPreferencesRecord | null;
+}
+
 /**
- * Future authoritative customer-data boundary. This contract is intentionally
- * not backed by the mock admin customer store: there is no authenticated
- * identity to scope those records to in the current preview.
+ * Authoritative customer-data boundary. Implemented by
+ * `lib/services/supabase/account.ts`; every query is scoped to the
+ * authenticated user's `auth.uid()` by row-level security.
  */
 export interface CustomerAccountProvider {
   getCustomerProfile(

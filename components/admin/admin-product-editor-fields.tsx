@@ -90,7 +90,7 @@ export function AdminProductEditorFields({
           <Input label="Release year" type="number" min="2000" max="2100" step="1" value={product.releaseYear} onChange={(event) => onUpdate('releaseYear', Number(event.target.value))} />
         </div>
         <Link href="/admin/inventory" className="mt-3 inline-flex min-h-11 items-center border-b border-border px-1 font-mono text-[9px] uppercase tracking-[0.1em] text-foreground-muted hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground">Open inventory control for confirmed stock edits</Link>
-        <div className="mt-4 max-w-sm"><Checkbox checked={product.featured} onChange={(checked) => onUpdate('featured', checked)} label="Featured in catalog sorting" description="This flag is read by the existing demo product service; it is not a CMS publication command." /></div>
+        <div className="mt-4 max-w-sm"><Checkbox checked={product.featured} onChange={(checked) => onUpdate('featured', checked)} label="Featured" description="Featured products appear first in the shop and on the home page." /></div>
       </EditorSection>
 
       <EditorSection code="04 // FINISHES & CONFIGURATION" title="Finishes & configuration" description="Variant identifiers and option pricing use the existing ProductColorVariant and ProductOptionVariant contracts.">

@@ -114,10 +114,10 @@ export function ProductFaqReviewsSection({
               ) : (
                 <div className="border border-border bg-surface p-6">
                   <TechnicalCode className="block">
-                    REVIEW ARCHIVE // NOT CONNECTED
+                    REVIEWS // NONE YET
                   </TechnicalCode>
                   <p className="mt-2 text-small leading-relaxed text-foreground-muted">
-                    No verified client reviews are available in this preview.
+                    This instrument has no verified client reviews yet.
                   </p>
                 </div>
               )}

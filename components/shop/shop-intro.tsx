@@ -305,7 +305,7 @@ export function ShopIntro({
                 </span>
               </button>
 
-              {/* Existing Categories from MOCK_CATEGORIES (Audio, Desk, Lighting, Input, Travel, Instruments) */}
+              {/* Catalog categories */}
               {categories.map((cat) => {
                 const isActive = activeCategory === cat.slug;
                 return (

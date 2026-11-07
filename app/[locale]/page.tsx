@@ -6,6 +6,7 @@ import {
   getSpotlightProduct,
   getProducts,
   getJournalArticles,
+  getStorefrontContent,
 } from '@/lib/services/localized';
 import { GlobalHeader, GlobalFooter } from '@/components/navigation';
 import { QuickViewModal } from '@/components/product';
@@ -30,13 +31,15 @@ export default async function NoireHomePage() {
     spotlightProduct,
     allProductsResponse,
     journalArticles,
+    storefrontContent,
   ] = await Promise.all([
-    getCategories(0),
-    getCollections(0),
-    getFeaturedProducts(4, 0),
-    getSpotlightProduct(0),
-    getProducts({ limit: 12, sort: 'featured' }, 0),
-    getJournalArticles(0),
+    getCategories(),
+    getCollections(),
+    getFeaturedProducts(4),
+    getSpotlightProduct(),
+    getProducts({ limit: 12, sort: 'featured' }),
+    getJournalArticles(),
+    getStorefrontContent(),
   ]);
 
   const allProducts = allProductsResponse.items;
@@ -45,12 +48,14 @@ export default async function NoireHomePage() {
   const heroProduct =
     allProducts.find((p) => p.id === 'prod-01') || featuredProducts[0];
 
-  // 04. Flagship Collection: Edition 04 // The Monolith Series
+  // 04. Flagship Collection: chosen in /admin/content, falling back to the first collection.
   const flagshipCollection =
-    collections.find((c) => c.id === 'col-monolith') || collections[0];
-  const collectionProducts = allProducts.filter((p) =>
-    flagshipCollection.productIds.includes(p.id)
-  );
+    collections.find((c) => c.id === storefrontContent.featuredCollectionId) ||
+    collections.find((c) => c.featured) ||
+    collections[0];
+  const collectionProducts = flagshipCollection
+    ? allProducts.filter((p) => flagshipCollection.productIds.includes(p.id))
+    : [];
 
   // 05. Showcase Products: Curated order for visual rhythm (Large -> Offset Pair -> Large -> Trio)
   const showcaseProducts = [
@@ -90,10 +95,12 @@ export default async function NoireHomePage() {
         <BrandStatementSection />
 
         {/* 04 — FEATURED COLLECTION */}
-        <FeaturedCollectionSection
-          collection={flagshipCollection}
-          products={collectionProducts}
-        />
+        {flagshipCollection && (
+          <FeaturedCollectionSection
+            collection={flagshipCollection}
+            products={collectionProducts}
+          />
+        )}
 
         {/* 05 — PRODUCT SHOWCASE */}
         <ProductShowcaseSection products={showcaseProducts} />

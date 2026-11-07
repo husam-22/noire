@@ -1,10 +1,9 @@
 import type { Metadata } from 'next';
-import type { Product } from '@/types';
 import {
+  getCanonicalCatalog,
   getCategories,
   getCollections,
   getFeaturedProducts,
-  getProducts,
   getSpotlightProduct,
 } from '@/lib/services/localized';
 import { GlobalFooter, GlobalHeader } from '@/components/navigation';
@@ -20,32 +19,13 @@ export const metadata: Metadata = {
   },
 };
 
-async function getCanonicalCatalog(): Promise<Product[]> {
-  const firstPage = await getProducts(
-    { limit: 50, page: 1, sort: 'featured' },
-    0
-  );
-  if (firstPage.totalPages <= 1) return firstPage.items;
-
-  const remainingPages = await Promise.all(
-    Array.from({ length: firstPage.totalPages - 1 }, (_, index) =>
-      getProducts(
-        { limit: firstPage.limit, page: index + 2, sort: 'featured' },
-        0
-      )
-    )
-  );
-
-  return [firstPage, ...remainingPages].flatMap((page) => page.items);
-}
-
 export default async function NoireWishlistPage() {
   const [categories, collections, featuredProducts, spotlightProduct, catalog] =
     await Promise.all([
-      getCategories(0),
-      getCollections(0),
-      getFeaturedProducts(4, 0),
-      getSpotlightProduct(0),
+      getCategories(),
+      getCollections(),
+      getFeaturedProducts(4),
+      getSpotlightProduct(),
       getCanonicalCatalog(),
     ]);
 

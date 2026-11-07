@@ -11,7 +11,7 @@ import { useSearchParams } from 'next/navigation';
 import { useRouter, usePathname } from '@/i18n/navigation';
 import { Container } from '@/components/layout';
 import { useDebounce } from '@/lib/hooks/use-debounce';
-import { getProducts } from '@/lib/services';
+import { fetchProductsAction } from '@/lib/actions/commerce';
 import { ShopIntro } from './shop-intro';
 import { ShopToolbar } from './shop-toolbar';
 import { ShopFilterSidebar } from './shop-filter-sidebar';
@@ -274,8 +274,9 @@ export function ShopExperience({
     setIsTransitionLoading(true);
     setServiceError(null);
     try {
-      const response = await getProducts({ limit: 50 }, 160);
-      setCatalogProducts(response.items);
+      const response = await fetchProductsAction({ limit: 50 });
+      if (!response.ok) throw new Error(response.error);
+      setCatalogProducts(response.data.items);
       // Remove diagnostic state param if present
       const qs = buildQueryStringFromFilters(filters);
       router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });

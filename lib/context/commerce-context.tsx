@@ -16,20 +16,14 @@ import type {
   Discount,
   ShippingMethod,
   OrderTotals,
-  Order,
-  OrderStatus,
 } from '@/types';
-import {
-  validateDiscountCode,
-  DEFAULT_SHIPPING_METHODS,
-} from '@/lib/services';
+import { validateDiscountAction } from '@/lib/actions/commerce';
+import { roundMoney } from '@/lib/commerce/totals';
 import { useToast } from '@/components/ui/toast';
 import {
   sanitizeCartState,
   sanitizeDiscountState,
   sanitizeIdentifierList,
-  sanitizeOrderList,
-  sanitizeOrderState,
   sanitizeShippingMethodState,
 } from '@/lib/utils/persisted-state';
 
@@ -37,6 +31,8 @@ export const FREE_SHIPPING_THRESHOLD = 500;
 export const STANDARD_COURIER_RATE = 35;
 
 interface CommerceContextValue {
+  // Shipping methods available for this store (loaded from the database on the server)
+  shippingMethods: ShippingMethod[];
   // Cart state
   cart: CartItem[];
   isCartHydrated: boolean;
@@ -77,12 +73,6 @@ interface CommerceContextValue {
   ) => Promise<{ valid: boolean; message: string }>;
   removeDiscountCode: () => void;
 
-  // Placed orders session archive (contains only tokenized paymentSummary, never raw card data)
-  placedOrders: Order[];
-  recordPlacedOrder: (order: Order) => void;
-  updatePlacedOrderStatus: (idOrOrderNumber: string, status: OrderStatus) => Order | null;
-  getPlacedOrderById: (idOrOrderNumber: string) => Order | null;
-
   // Wishlist state
   wishlistIds: string[];
   wishlistCount: number;
@@ -113,18 +103,41 @@ const STORAGE_KEYS = {
   RECENT: 'noire_recent_v1',
   DISCOUNT: 'noire_discount_v1',
   SHIPPING_METHOD: 'noire_shipping_method_v1',
-  ORDERS: 'noire_orders_v1',
+};
+/** Legacy key from the pre-database build; removed on first load. */
+const LEGACY_ORDERS_KEY = 'noire_orders_v1';
+
+/** Safe default when the database has no active shipping method yet. */
+const FALLBACK_SHIPPING_METHOD: ShippingMethod = {
+  id: 'standard',
+  code: 'standard',
+  name: 'Standard delivery',
+  carrier: 'Courier',
+  estimatedWindow: '5–7 business days',
+  estimatedDispatch: '1–2 business days',
+  baseCost: STANDARD_COURIER_RATE,
+  freeAboveSubtotal: FREE_SHIPPING_THRESHOLD,
+  description: '',
 };
 const MAX_PERSISTED_STATE_CHARS = 2 * 1024 * 1024;
 
-export function CommerceProvider({ children }: { children: React.ReactNode }) {
+export function CommerceProvider({
+  children,
+  shippingMethods: shippingMethodsProp,
+}: {
+  children: React.ReactNode;
+  shippingMethods?: ShippingMethod[];
+}) {
   const { addToast } = useToast();
+  const shippingMethods = useMemo<ShippingMethod[]>(
+    () => (shippingMethodsProp && shippingMethodsProp.length > 0 ? shippingMethodsProp : [FALLBACK_SHIPPING_METHOD]),
+    [shippingMethodsProp]
+  );
 
   const [cart, setCart] = useState<CartItem[]>([]);
   const [appliedDiscount, setAppliedDiscount] = useState<Discount | null>(null);
   const [selectedShippingMethod, setSelectedShippingMethodState] =
-    useState<ShippingMethod>(DEFAULT_SHIPPING_METHODS[0]);
-  const [placedOrders, setPlacedOrders] = useState<Order[]>([]);
+    useState<ShippingMethod>(shippingMethods[0]);
   const [wishlistIds, setWishlistIds] = useState<string[]>([]);
   const [recentlyViewedIds, setRecentlyViewedIds] = useState<string[]>([]);
   const [isHydrated, setIsHydrated] = useState(false);
@@ -163,18 +176,22 @@ export function CommerceProvider({ children }: { children: React.ReactNode }) {
       setWishlistIds([]);
       setRecentlyViewedIds([]);
       setAppliedDiscount(null);
-      setSelectedShippingMethodState(DEFAULT_SHIPPING_METHODS[0]);
-      setPlacedOrders([]);
+      setSelectedShippingMethodState(shippingMethods[0]);
     };
+
+    try {
+      localStorage.removeItem(LEGACY_ORDERS_KEY);
+    } catch {
+      // Ignore
+    }
 
     setCart(sanitizeCartState(readStoredValue(STORAGE_KEYS.CART)));
     setWishlistIds(sanitizeIdentifierList(readStoredValue(STORAGE_KEYS.WISHLIST)));
     setRecentlyViewedIds(sanitizeIdentifierList(readStoredValue(STORAGE_KEYS.RECENT), 6));
     setAppliedDiscount(sanitizeDiscountState(readStoredValue(STORAGE_KEYS.DISCOUNT)));
     setSelectedShippingMethodState(
-      sanitizeShippingMethodState(readStoredValue(STORAGE_KEYS.SHIPPING_METHOD), DEFAULT_SHIPPING_METHODS)
+      sanitizeShippingMethodState(readStoredValue(STORAGE_KEYS.SHIPPING_METHOD), shippingMethods)
     );
-    setPlacedOrders(sanitizeOrderList(readStoredValue(STORAGE_KEYS.ORDERS), DEFAULT_SHIPPING_METHODS));
     setIsHydrated(true);
 
     const handleStorageSync = (event: StorageEvent) => {
@@ -192,14 +209,13 @@ export function CommerceProvider({ children }: { children: React.ReactNode }) {
       } else if (event.key === STORAGE_KEYS.DISCOUNT) {
         setAppliedDiscount(sanitizeDiscountState(value));
       } else if (event.key === STORAGE_KEYS.SHIPPING_METHOD) {
-        setSelectedShippingMethodState(sanitizeShippingMethodState(value, DEFAULT_SHIPPING_METHODS));
-      } else if (event.key === STORAGE_KEYS.ORDERS) {
-        setPlacedOrders(sanitizeOrderList(value, DEFAULT_SHIPPING_METHODS));
+        setSelectedShippingMethodState(sanitizeShippingMethodState(value, shippingMethods));
       }
     };
 
     window.addEventListener('storage', handleStorageSync);
     return () => window.removeEventListener('storage', handleStorageSync);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- hydrate once; shipping methods are static per page load
   }, []);
 
   // Persist changes to localStorage
@@ -261,20 +277,11 @@ export function CommerceProvider({ children }: { children: React.ReactNode }) {
     }
   }, [selectedShippingMethod, isHydrated]);
 
-  useEffect(() => {
-    if (!isHydrated) return;
-    try {
-      localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(placedOrders));
-    } catch {
-      // Ignore
-    }
-  }, [placedOrders, isHydrated]);
-
   const setSelectedShippingMethod = useCallback((method: ShippingMethod) => {
     setSelectedShippingMethodState(
-      sanitizeShippingMethodState(method, DEFAULT_SHIPPING_METHODS)
+      sanitizeShippingMethodState(method, shippingMethods)
     );
-  }, []);
+  }, [shippingMethods]);
 
   const addToCart = useCallback(
     ({
@@ -477,77 +484,6 @@ export function CommerceProvider({ children }: { children: React.ReactNode }) {
     [addToast]
   );
 
-  const recordPlacedOrder = useCallback(
-    (order: Order) => {
-      const safeOrder = sanitizeOrderState(order, DEFAULT_SHIPPING_METHODS);
-      if (!safeOrder) {
-        throw new Error('The demonstration order could not be safely recorded. Your bag remains available.');
-      }
-      const nextOrders = [
-        safeOrder,
-        ...placedOrders.filter((candidate) => candidate.id !== safeOrder.id),
-      ].slice(0, 100);
-      setPlacedOrders(nextOrders);
-      try {
-        // Whitelisted local demo fields only; payment credentials/tokens and real fulfillment data are omitted.
-        localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(nextOrders));
-      } catch {
-        // The order remains available in in-memory state if storage is restricted.
-      }
-    },
-    [placedOrders]
-  );
-
-  const updatePlacedOrderStatus = useCallback(
-    (idOrOrderNumber: string, status: OrderStatus): Order | null => {
-      if (!['pending_settlement', 'processing', 'Craft & Calibration', 'shipped', 'delivered', 'cancelled', 'returned'].includes(status)) return null;
-      const current = placedOrders.find(
-        (order) => order.id === idOrOrderNumber || order.orderNumber === idOrOrderNumber
-      );
-      if (!current) return null;
-      if (current.status === status) return current;
-
-      const timestamp = new Date().toISOString();
-      const updated: Order = {
-        ...current,
-        status,
-        updatedAt: timestamp,
-        timeline: [
-          ...current.timeline,
-          {
-            id: `local-admin-${Date.now()}`,
-            status: `LOCAL DEMO ADMIN ACTION // ${status.toUpperCase()}`,
-            description: `A local administrator changed the displayed order status from ${current.status} to ${status}. No payment authorization, capture, inventory reservation, shipping label, courier booking, or physical fulfillment action was performed.`,
-            timestamp,
-            completed: true,
-          },
-        ],
-      };
-      const nextOrders = placedOrders.map((order) =>
-        order.id === current.id ? updated : order
-      );
-      setPlacedOrders(nextOrders);
-      try {
-        localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(nextOrders));
-      } catch {
-        // The update remains in memory if browser storage is unavailable.
-      }
-      return updated;
-    },
-    [placedOrders]
-  );
-
-  const getPlacedOrderById = useCallback(
-    (idOrOrderNumber: string): Order | null => {
-      return (
-        placedOrders.find(
-          (o) => o.id === idOrOrderNumber || o.orderNumber === idOrOrderNumber
-        ) ?? null
-      );
-    },
-    [placedOrders]
-  );
-
   const isInWishlist = useCallback(
     (productId: string) => wishlistIds.includes(productId),
     [wishlistIds]
@@ -656,7 +592,7 @@ export function CommerceProvider({ children }: { children: React.ReactNode }) {
       return 0;
     }
     if (appliedDiscount.type === 'percentage') {
-      return Math.round((cartSubtotal * appliedDiscount.value) / 100);
+      return roundMoney((cartSubtotal * appliedDiscount.value) / 100);
     }
     if (appliedDiscount.type === 'fixed_amount') {
       return Math.min(cartSubtotal, appliedDiscount.value);
@@ -666,13 +602,17 @@ export function CommerceProvider({ children }: { children: React.ReactNode }) {
 
   const applyDiscountCode = useCallback(
     async (code: string): Promise<{ valid: boolean; message: string }> => {
-      const result = await validateDiscountCode(code, cartSubtotal);
+      const response = await validateDiscountAction(code, cartSubtotal);
+      if (!response.ok) {
+        return { valid: false, message: response.error };
+      }
+      const result = response.data;
       const safeDiscount = sanitizeDiscountState(result.discount);
       if (result.valid && safeDiscount) {
         setAppliedDiscount(safeDiscount);
         addToast({
           type: 'success',
-          title: `Demo code ${safeDiscount.code} applied`,
+          title: `Code ${safeDiscount.code} applied`,
           description: safeDiscount.description,
         });
         return { valid: true, message: result.message };
@@ -689,7 +629,7 @@ export function CommerceProvider({ children }: { children: React.ReactNode }) {
     addToast({
       type: 'info',
       title: `Code ${codeName} removed`,
-      description: 'Allocation privilege code has been removed.',
+      description: 'The discount code has been removed from your bag.',
     });
   }, [appliedDiscount, addToast]);
 
@@ -744,6 +684,7 @@ export function CommerceProvider({ children }: { children: React.ReactNode }) {
 
   const value = useMemo(
     () => ({
+      shippingMethods,
       cart,
       isCartHydrated: isHydrated,
       cartCount,
@@ -769,10 +710,6 @@ export function CommerceProvider({ children }: { children: React.ReactNode }) {
       clearCart,
       applyDiscountCode,
       removeDiscountCode,
-      placedOrders,
-      recordPlacedOrder,
-      updatePlacedOrderStatus,
-      getPlacedOrderById,
       wishlistIds,
       wishlistCount: wishlistIds.length,
       isInWishlist,
@@ -788,6 +725,7 @@ export function CommerceProvider({ children }: { children: React.ReactNode }) {
       setQuickViewProduct,
     }),
     [
+      shippingMethods,
       cart,
       isHydrated,
       cartCount,
@@ -812,10 +750,6 @@ export function CommerceProvider({ children }: { children: React.ReactNode }) {
       clearCart,
       applyDiscountCode,
       removeDiscountCode,
-      placedOrders,
-      recordPlacedOrder,
-      updatePlacedOrderStatus,
-      getPlacedOrderById,
       wishlistIds,
       isInWishlist,
       toggleWishlist,

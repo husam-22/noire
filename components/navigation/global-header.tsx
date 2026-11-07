@@ -34,7 +34,7 @@ export interface GlobalHeaderProps {
   categories: Category[];
   collections: Collection[];
   featuredProducts: Product[];
-  spotlightProduct: Product;
+  spotlightProduct: Product | null;
   /**
    * When true, the header starts in transparent mode (Warm Ivory over dark cinema hero)
    * and transitions smoothly to solid Alabaster/Surface upon scrolling or Mega Menu activation.
@@ -176,6 +176,7 @@ export function GlobalHeader({
   return (
     <>
       <header
+        style={{ top: 'var(--announcement-h, 0px)' }}
         className={cn(
           'fixed start-0 end-0 top-0 z-header transition-all duration-400 ease-noire-out',
           isTransparent

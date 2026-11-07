@@ -9,9 +9,11 @@ import {
   AlertCircle,
   ArrowLeft,
   ArrowRight,
+  Banknote,
   ChevronRight,
   CreditCard,
   Info,
+  Landmark,
   LockKeyhole,
   MapPin,
   RefreshCw,
@@ -24,18 +26,19 @@ import type {
   CartItem,
   CartValidationIssue,
   OrderTotals,
-  PaymentMethod,
+  PaymentMethodType,
   ShippingMethod,
 } from '@/types';
 import {
-  finalizeOrder,
-  getShippingMethods,
-  validateCartForCheckout,
-  validateDeliveryAddress,
-  validateDiscountCode,
-  validateOrderTotals,
-} from '@/lib/services';
+  placeOrderAction,
+  quoteShippingAction,
+  validateAddressAction,
+  validateCartAction,
+  validateDiscountAction,
+} from '@/lib/actions/commerce';
+import { validateOrderTotals } from '@/lib/commerce/totals';
 import { useCommerce } from '@/lib/context/commerce-context';
+import { useStorefrontContent } from '@/lib/context/storefront-content-context';
 import { useCheckout, type CheckoutAddressDraft } from '@/lib/context/checkout-context';
 import { Button, EmptyState, Input, PriceDisplay, TechnicalCode } from '@/components/ui';
 import { Container } from '@/components/layout';
@@ -68,6 +71,39 @@ const COUNTRIES = [
 
 type FieldErrors = Record<string, string>;
 type AddressField = keyof CheckoutAddressDraft;
+type ManualPaymentMethod = Extract<PaymentMethodType, 'cash_on_delivery' | 'bank_transfer'>;
+
+const PAYMENT_OPTIONS: Array<{
+  id: ManualPaymentMethod;
+  label: string;
+  summary: string;
+  detail: string;
+  icon: React.ComponentType<{ className?: string; 'aria-hidden'?: boolean | 'true' | 'false' }>;
+}> = [
+  {
+    id: 'cash_on_delivery',
+    label: 'Cash on delivery',
+    summary: 'Pay the courier in full when your order arrives.',
+    detail: 'Our team confirms the order by phone or email before dispatch. Have the exact amount ready for the courier.',
+    icon: Banknote,
+  },
+  {
+    id: 'bank_transfer',
+    label: 'Bank transfer',
+    summary: 'Transfer the total to our account; we dispatch once the payment is confirmed.',
+    detail: 'Bank details are included in your order confirmation. Use your order number as the transfer reference.',
+    icon: Landmark,
+  },
+];
+
+function paymentLabel(method: PaymentMethodType): string {
+  return PAYMENT_OPTIONS.find((option) => option.id === method)?.label ?? 'Manual settlement';
+}
+
+function newIdempotencyKey(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+  return `ord-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
+}
 
 interface CheckoutExperienceProps {
   initialShippingMethods: ShippingMethod[];
@@ -80,31 +116,6 @@ function validateEmail(email: string): boolean {
 function validatePhone(phone: string): boolean {
   const digits = phone.replace(/\D/g, '');
   return digits.length >= 7 && digits.length <= 15;
-}
-
-function passesLuhn(value: string): boolean {
-  const digits = value.replace(/[\s-]/g, '');
-  if (!/^\d{13,19}$/.test(digits)) return false;
-  let sum = 0;
-  let doubleDigit = false;
-  for (let index = digits.length - 1; index >= 0; index -= 1) {
-    let digit = Number(digits[index]);
-    if (doubleDigit) {
-      digit *= 2;
-      if (digit > 9) digit -= 9;
-    }
-    sum += digit;
-    doubleDigit = !doubleDigit;
-  }
-  return sum % 10 === 0;
-}
-
-function identifyCardBrand(digits: string): string {
-  if (/^4/.test(digits)) return 'Visa';
-  if (/^(5[1-5]|2[2-7])/.test(digits)) return 'Mastercard';
-  if (/^3[47]/.test(digits)) return 'American Express';
-  if (/^(6011|65|64[4-9])/.test(digits)) return 'Discover';
-  return 'Card';
 }
 
 function getFieldError(errors: FieldErrors, key: string): string | undefined {
@@ -218,7 +229,7 @@ function SectionHeading({
   title,
   detail,
   id,
-  requiredLabel = 'Required for local order record',
+  requiredLabel = 'Required',
 }: {
   number: string;
   title: string;
@@ -368,32 +379,32 @@ function TotalsLedger({
       {totals.discountAmount > 0 && (
         <div className="flex items-center justify-between gap-4 text-small">
           <dt className="min-w-0 text-foreground-muted">
-            Privilege <span className="font-mono text-[10px]">{discountCode}</span>
+            Discount <span className="font-mono text-[10px]">{discountCode}</span>
           </dt>
           <dd className="shrink-0 font-mono tabular-nums text-success">−{formatPrice(totals.discountAmount)}</dd>
         </div>
       )}
       <div className="flex items-start justify-between gap-4 text-small">
         <dt className="min-w-0 text-foreground-muted">
-          <span className="block">Courier estimate // demo</span>
+          <span className="block">Delivery</span>
           <span className="mt-0.5 block text-[10px] leading-relaxed text-foreground-subtle">
             {shippingMethod.name}
           </span>
         </dt>
         <dd className="shrink-0 font-mono tabular-nums text-foreground">
-          {totals.shippingCost === 0 ? 'DEMO INCLUDED' : formatPrice(totals.shippingCost)}
+          {totals.shippingCost === 0 ? 'INCLUDED' : formatPrice(totals.shippingCost)}
         </dd>
       </div>
       <div className="flex items-center justify-between gap-4 text-small">
-        <dt className="text-foreground-muted">Duties &amp; tax estimate</dt>
+        <dt className="text-foreground-muted">Tax</dt>
         <dd className="font-mono tabular-nums text-foreground">
-          {totals.taxAmount === 0 ? 'PENDING' : formatPrice(totals.taxAmount)}
+          {totals.taxAmount === 0 ? 'INCLUDED' : formatPrice(totals.taxAmount)}
         </dd>
       </div>
       <div className="flex items-end justify-between gap-4 border-t border-border pt-4">
         <dt>
-          <span className="block font-display text-base text-foreground">Estimated total</span>
-          <span className="mt-1 block font-mono text-[9px] uppercase tracking-[0.13em] text-foreground-subtle">USD // tax subject to destination</span>
+          <span className="block font-display text-base text-foreground">Total</span>
+          <span className="mt-1 block font-mono text-[9px] uppercase tracking-[0.13em] text-foreground-subtle">USD // payable on delivery or by transfer</span>
         </dt>
         <dd className="shrink-0 text-end">
           <PriceDisplay price={totals.total} size={compact ? 'lg' : 'xl'} />
@@ -479,7 +490,7 @@ function CartIssuePanel({
         <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-danger" aria-hidden="true" />
         <div className="min-w-0 flex-1">
           <h2 className="font-mono text-label uppercase tracking-[0.15em] text-danger">
-            Manifest validation // action required
+            Bag validation // action required
           </h2>
           <ul className="mt-3 space-y-4">
             {issues.map((issue, index) => (
@@ -529,7 +540,7 @@ function CartIssuePanel({
             ))}
           </ul>
           <Link href="/cart" className="mt-4 inline-flex min-h-11 items-center gap-2 font-mono text-[10px] uppercase tracking-[0.12em] underline underline-offset-4">
-            Return to allocation bag <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+            Return to bag <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
           </Link>
         </div>
       </div>
@@ -561,14 +572,19 @@ export function CheckoutExperience({
     applyDiscountCode,
     removeDiscountCode,
     clearCart,
-    recordPlacedOrder,
   } = useCommerce();
+  const storefront = useStorefrontContent();
+  const paymentOptions = useMemo(
+    () => PAYMENT_OPTIONS.filter((option) => (option.id === 'cash_on_delivery' ? storefront.cashOnDeliveryEnabled : storefront.bankTransferEnabled)),
+    [storefront.cashOnDeliveryEnabled, storefront.bankTransferEnabled]
+  );
   const {
     customer,
     shippingAddress,
     billingAddress,
     billingSameAsShipping,
     selectedShippingMethodId,
+    paymentMethodType,
     activeSection,
     notes,
     isCheckoutHydrated,
@@ -577,6 +593,7 @@ export function CheckoutExperience({
     setBillingAddress,
     setBillingSameAsShipping,
     setSelectedShippingMethodId,
+    setPaymentMethodType,
     setActiveSection,
     setNotes,
     paymentState,
@@ -595,16 +612,14 @@ export function CheckoutExperience({
   const [promoError, setPromoError] = useState(false);
   const [isApplyingPromo, setIsApplyingPromo] = useState(false);
   const [isWorking, setIsWorking] = useState(false);
-  const [paymentCardholder, setPaymentCardholder] = useState('');
-  const [reviewPaymentMethod, setReviewPaymentMethod] = useState<PaymentMethod | null>(null);
+  const [reviewPaymentMethod, setReviewPaymentMethod] = useState<ManualPaymentMethod | null>(null);
   const [showTaxNote, setShowTaxNote] = useState(false);
   const [orderAttemptStatus, setOrderAttemptStatus] = useState('');
 
-  const cardNumberRef = useRef<HTMLInputElement | null>(null);
-  const expiryRef = useRef<HTMLInputElement | null>(null);
-  const cvcRef = useRef<HTMLInputElement | null>(null);
   const reviewRef = useRef<HTMLElement | null>(null);
   const actionLock = useRef(false);
+  const idempotencyKeyRef = useRef<string>('');
+  if (!idempotencyKeyRef.current) idempotencyKeyRef.current = newIdempotencyKey();
 
   const selectedShippingOption = useMemo(
     () => shippingMethods.find((method) => method.id === selectedShippingMethodId) ?? null,
@@ -615,12 +630,17 @@ export function CheckoutExperience({
     let active = true;
     setIsLoadingShipping(true);
     setShippingServiceError('');
-    void getShippingMethods(shippingAddress.country, 0, cartSubtotal, appliedDiscount?.type === 'free_shipping')
-      .then((methods) => {
+    void quoteShippingAction(shippingAddress.country, cartSubtotal, appliedDiscount?.type === 'free_shipping')
+      .then((response) => {
         if (!active) return;
+        if (!response.ok) {
+          setShippingServiceError(response.error);
+          return;
+        }
+        const methods = response.data;
         setShippingMethods(methods);
         if (methods.length === 0) {
-          setShippingServiceError('No demo delivery estimates are available for this destination. Check the selected country or return to your bag.');
+          setShippingServiceError('No delivery option is available for this destination yet. Check the selected country or contact us.');
           return;
         }
         const contextMethod = methods.find((method) => method.id === selectedShippingMethod.id);
@@ -639,7 +659,7 @@ export function CheckoutExperience({
       })
       .catch(() => {
         if (!active) return;
-        setShippingServiceError('Courier estimates could not be retrieved. Retry the shipping service or return to your bag.');
+        setShippingServiceError('Delivery options could not be loaded. Retry or return to your bag.');
       })
       .finally(() => {
         if (active) setIsLoadingShipping(false);
@@ -768,37 +788,16 @@ export function CheckoutExperience({
       validateAddressDraft(billingAddress, 'billing', customer.phone, nextErrors);
     }
 
-    if (!paymentCardholder.trim()) {
-      nextErrors['payment.cardholder'] = 'Cardholder name is required.';
-    }
-    const cardRaw = cardNumberRef.current?.value.trim() ?? '';
-    const cardDigits = cardRaw.replace(/[\s-]/g, '');
-    if (!passesLuhn(cardDigits)) {
-      nextErrors['payment.cardNumber'] = 'Enter a valid 13–19 digit sandbox card number.';
-    }
-    const expiryValue = expiryRef.current?.value.trim() ?? '';
-    const expiryMatch = /^(0[1-9]|1[0-2])\/(\d{2})$/.exec(expiryValue);
-    if (!expiryMatch) {
-      nextErrors['payment.expiry'] = 'Enter expiry in MM/YY format.';
-    } else {
-      const month = Number(expiryMatch[1]);
-      const year = 2000 + Number(expiryMatch[2]);
-      const now = new Date();
-      if (year < now.getFullYear() || (year === now.getFullYear() && month < now.getMonth() + 1)) {
-        nextErrors['payment.expiry'] = 'This card has expired. Use a future sandbox expiry date.';
-      }
-    }
-    const cvcDigits = cvcRef.current?.value.trim() ?? '';
-    if (!/^\d{3,4}$/.test(cvcDigits)) {
-      nextErrors['payment.cvc'] = 'Enter the 3–4 digit security code for the sandbox card.';
+    if (!paymentOptions.some((option) => option.id === paymentMethodType)) {
+      nextErrors['payment.method'] = 'Choose how you would like to pay.';
     }
     return nextErrors;
-  }, [customer, shippingAddress, billingSameAsShipping, billingAddress, paymentCardholder]);
+  }, [customer, shippingAddress, billingSameAsShipping, billingAddress, paymentMethodType, paymentOptions]);
 
   const focusFirstError = useCallback((errors: FieldErrors) => {
     const first = Object.keys(errors)[0];
     if (!first) return;
-    const fieldId = first === 'payment.cardNumber' ? 'payment-card-number' : first.replaceAll('.', '-');
+    const fieldId = first === 'payment.method' ? 'payment-method-cash_on_delivery' : first.replaceAll('.', '-');
     window.requestAnimationFrame(() => {
       const element = document.getElementById(fieldId);
       if (element instanceof HTMLElement) {
@@ -821,13 +820,13 @@ export function CheckoutExperience({
     });
   }, [reducedMotion, setActiveSection]);
 
-  const runPreflight = useCallback(async (): Promise<PaymentMethod | null> => {
+  const runPreflight = useCallback(async (): Promise<ManualPaymentMethod | null> => {
     setGeneralError('');
     setCartIssues([]);
     setFieldErrors({});
 
     if (cart.length === 0) {
-      setValidationError('Your allocation bag is empty. Add an instrument before continuing.', 'client');
+      setValidationError('Your bag is empty. Add a product before continuing.', 'client');
       return null;
     }
 
@@ -842,13 +841,13 @@ export function CheckoutExperience({
     }
 
     if (isLoadingShipping || shippingServiceError || shippingMethods.length === 0 || !selectedShippingOption) {
-            setValidationError(shippingServiceError || (isLoadingShipping ? 'Demo delivery estimates are still refreshing for this destination. Wait for the updated options, then continue.' : 'A demo delivery estimate is not available for this destination. Retry the estimate lookup.'), 'delivery');
+      setValidationError(shippingServiceError || (isLoadingShipping ? 'Delivery options are still loading for this destination. Wait a moment, then continue.' : 'No delivery option is available for this destination. Retry the lookup.'), 'delivery');
       return null;
     }
 
     if (selectedShippingMethod.id !== selectedShippingOption.id) {
       setSelectedShippingMethod(selectedShippingOption);
-      setValidationError('The demo delivery estimate changed. Review the revised total, then continue.', 'delivery');
+      setValidationError('The delivery option changed. Review the revised total, then continue.', 'delivery');
       return null;
     }
 
@@ -873,8 +872,8 @@ export function CheckoutExperience({
           );
 
       const addressResults = await Promise.all([
-        validateDeliveryAddress(shippingAddressRecord, 0),
-        ...(billingSameAsShipping ? [] : [validateDeliveryAddress(billingAddressRecord, 0)]),
+        validateAddressAction(shippingAddressRecord),
+        ...(billingSameAsShipping ? [] : [validateAddressAction(billingAddressRecord)]),
       ]);
       if (!addressResults[0].valid || (addressResults[1] && !addressResults[1].valid)) {
         const addressErrors: FieldErrors = {};
@@ -893,7 +892,9 @@ export function CheckoutExperience({
         return null;
       }
 
-      const cartValidation = await validateCartForCheckout(cart, 0);
+      const cartResponse = await validateCartAction(cart);
+      if (!cartResponse.ok) throw new Error(cartResponse.error);
+      const cartValidation = cartResponse.data;
       if (!cartValidation.valid) {
         setCartIssues(cartValidation.issues);
         setPaymentState('failed');
@@ -908,13 +909,14 @@ export function CheckoutExperience({
       }
 
       if (appliedDiscount) {
-        const discountCheck = await validateDiscountCode(appliedDiscount.code, cartSubtotal);
+        const discountResponse = await validateDiscountAction(appliedDiscount.code, cartSubtotal);
+        const discountCheck = discountResponse.ok ? discountResponse.data : { valid: false, discountAmount: 0, message: discountResponse.error };
         if (!discountCheck.valid || Math.abs(discountCheck.discountAmount - discountAmount) > 0.01) {
           removeDiscountCode();
           setPromoError(true);
-          setPromoMessage(discountCheck.message || 'The allocation code changed. It has been removed; review your revised total.');
+          setPromoMessage(discountCheck.message || 'The discount code changed. It has been removed; review your revised total.');
           setPaymentState('failed');
-          setValidationError('The allocation privilege could not be confirmed and has been removed. Review the updated total before continuing.', 'review');
+          setValidationError('The discount code could not be confirmed and has been removed. Review the updated total before continuing.', 'review');
           return null;
         }
       }
@@ -929,22 +931,14 @@ export function CheckoutExperience({
         orderTotals.total !== cartTotal
       ) {
         setPaymentState('failed');
-        setValidationError(totalValidation.message || 'The allocation total changed. Review the updated summary.', 'review');
+        setValidationError(totalValidation.message || 'The order total changed. Review the updated summary.', 'review');
         return null;
       }
 
-      const cardDigits = cardNumberRef.current?.value.replace(/\D/g, '') ?? '';
-      const safeMethod: PaymentMethod = {
-        id: 'demo-method',
-        provider: 'demo',
-        type: 'card',
-        brand: identifyCardBrand(cardDigits),
-        last4: cardDigits.slice(-4),
-        cardholderName: paymentCardholder.trim(),
-      };
-      setReviewPaymentMethod(safeMethod);
+      const method = paymentOptions.find((option) => option.id === paymentMethodType)?.id ?? paymentOptions[0]?.id ?? 'cash_on_delivery';
+      setReviewPaymentMethod(method);
       setPaymentState('ready_for_review');
-      return safeMethod;
+      return method;
     } catch (error) {
       setPaymentState('failed');
       setValidationError(
@@ -973,7 +967,7 @@ export function CheckoutExperience({
     shippingEstimateCost,
     taxAmount,
     cartTotal,
-    paymentCardholder,
+    paymentMethodType,
     buildFieldErrors,
     focusFirstError,
     reducedMotion,
@@ -982,6 +976,7 @@ export function CheckoutExperience({
     setPaymentState,
     setSelectedShippingMethod,
     setValidationError,
+      paymentOptions,
   ]);
 
   const handleReview = async () => {
@@ -1005,14 +1000,14 @@ export function CheckoutExperience({
     if (actionLock.current || isWorking) return;
     actionLock.current = true;
     setIsWorking(true);
-    setOrderAttemptStatus('Revalidating inventory, courier, privilege code, and settlement architecture…');
+    setOrderAttemptStatus('Confirming stock, delivery and discount details…');
     try {
       const safePaymentMethod = await runPreflight();
       if (!safePaymentMethod) return;
 
       const shippingMethod = shippingMethods.find((method) => method.id === selectedShippingMethodId);
       if (!shippingMethod) {
-        setValidationError('Selected courier method could not be resolved. Choose an available method and retry.', 'delivery');
+        setValidationError('The selected delivery option could not be resolved. Choose an available option and retry.', 'delivery');
         return;
       }
 
@@ -1036,44 +1031,41 @@ export function CheckoutExperience({
           );
 
       setPaymentState('intent_created');
-      const result = await finalizeOrder({
+      setOrderAttemptStatus('Placing your order…');
+      const result = await placeOrderAction({
+        idempotencyKey: idempotencyKeyRef.current,
         customer,
         shippingAddress: shippingAddressRecord,
         billingAddress: billingAddressRecord,
-        shippingMethod,
-        paymentMethod: safePaymentMethod,
+        shippingMethodId: shippingMethod.id,
         items: cart,
         totals: orderTotals,
         discountCode: appliedDiscount?.code,
+        paymentMethodType: safePaymentMethod,
         notes: notes.trim() || undefined,
       });
 
-      if (result.paymentResult.status === 'declined') {
+      if (!result.ok) {
         setPaymentState('failed');
-        setActiveSection('settlement');
-        setValidationError(
-          result.paymentResult.errorMessage ?? 'Settlement could not be authorized by the demonstration adapter. The allocation bag remains unchanged.',
-          'settlement'
-        );
+        if (result.code === 'CONFLICT') {
+          // The order exists but pricing drifted; a fresh key is needed for any new attempt.
+          idempotencyKeyRef.current = newIdempotencyKey();
+        }
+        setValidationError(result.error, result.code === 'VALIDATION_ERROR' ? 'review' : 'review');
         return;
       }
-      if (!result.order) {
-        throw new Error('No allocation record was returned. Your bag remains available to retry.');
-      }
 
-      // The local adapter records a pending order only. It never asserts that a
-      // bank authorized or captured funds; the order is clearly marked pending.
       setPaymentState('provider_required');
-      recordPlacedOrder(result.order);
       clearCart(true);
       clearCheckoutDraft();
-      router.push(`/order/${encodeURIComponent(result.order.id)}/confirmation`);
+      idempotencyKeyRef.current = newIdempotencyKey();
+      router.push(`/order/${encodeURIComponent(result.data.id)}/confirmation`);
     } catch (error) {
       setPaymentState('failed');
       setValidationError(
         error instanceof Error
-          ? `${error.message} Your allocation bag has been preserved; review the details and retry.`
-          : 'The order service is unavailable. Your allocation bag has been preserved; retry or return to the bag.',
+          ? `${error.message} Your bag has been preserved; review the details and retry.`
+          : 'The order service is unavailable. Your bag has been preserved; retry or return to the bag.',
         'review'
       );
     } finally {
@@ -1123,7 +1115,7 @@ export function CheckoutExperience({
       }
     } catch {
       setPromoError(true);
-      setPromoMessage('Allocation privilege service is unavailable. Try again shortly.');
+      setPromoMessage('Discount codes cannot be checked right now. Try again shortly.');
     } finally {
       setIsApplyingPromo(false);
     }
@@ -1135,7 +1127,7 @@ export function CheckoutExperience({
       price: issue.updatedPrice,
     });
     setCartIssues((current) => current.filter((item) => item.itemId !== issue.itemId));
-    setGeneralError('Updated allocation details are in the bag. Review the refreshed total and continue.');
+    setGeneralError('Your bag has been updated. Review the refreshed total and continue.');
   };
 
   const handleCartIssueRemove = (itemId: string) => {
@@ -1143,8 +1135,9 @@ export function CheckoutExperience({
     setCartIssues((current) => current.filter((item) => item.itemId !== itemId));
   };
 
-  const handleCardFieldChange = (field: string) => {
-    clearFieldError(`payment.${field}`);
+  const handlePaymentSelection = (method: ManualPaymentMethod) => {
+    setPaymentMethodType(method);
+    clearFieldError('payment.method');
     setReviewPaymentMethod(null);
     setPaymentState('not_started');
     setGeneralError('');
@@ -1167,15 +1160,15 @@ export function CheckoutExperience({
       <section className="bg-background pb-section-md pt-10 sm:pt-14">
         <Container size="wide">
           <div className="mb-8 flex flex-wrap items-center justify-between gap-4 border-b border-border pb-5">
-            <TechnicalCode>NOIRÉ // DEMO CHECKOUT</TechnicalCode>
+            <TechnicalCode>NOIRÉ // CHECKOUT</TechnicalCode>
             <Link href="/cart" className="inline-flex min-h-11 items-center gap-2 font-mono text-[10px] uppercase tracking-[0.13em] text-foreground-muted hover:text-foreground">
-              <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" /> Return to allocation bag
+              <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" /> Return to bag
             </Link>
           </div>
           <EmptyState
-            code="CHECKOUT // NO ACTIVE MANIFEST"
-            title="An allocation requires an instrument."
-            description="Your bag is empty or a local demo record has already been created. Return to the archive to select an instrument before starting the browser-local checkout demonstration."
+            code="CHECKOUT // EMPTY BAG"
+            title="Your bag is empty."
+            description="Add a product from the shop before starting checkout."
             icon={<CreditCard className="h-6 w-6" aria-hidden="true" />}
             primaryAction={
               <Link href="/shop">
@@ -1184,7 +1177,7 @@ export function CheckoutExperience({
             }
             secondaryAction={
               <Link href="/cart" className="inline-flex min-h-11 items-center border-b border-foreground font-mono text-[10px] uppercase tracking-[0.13em]">
-                Review allocation bag
+                Review bag
               </Link>
             }
             className="min-h-[340px]"
@@ -1205,9 +1198,9 @@ export function CheckoutExperience({
       <div className="surface-obsidian border-b border-border py-3.5">
         <Container size="wide" className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-2 font-mono text-[9px] uppercase tracking-[0.14em] text-foreground-inverse/70 sm:text-[10px]">
-            <span className="shrink-0">Manifest</span>
+            <span className="shrink-0">Bag</span>
             <ChevronRight className="h-3 w-3 shrink-0" aria-hidden="true" />
-            <span className="truncate text-foreground-inverse">Demo Checkout</span>
+            <span className="truncate text-foreground-inverse">Checkout</span>
           </div>
           <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-foreground-inverse/60 sm:text-[10px]">
             CHECKOUT // NR-{new Date().getFullYear()} · {itemCountLabel}
@@ -1219,14 +1212,14 @@ export function CheckoutExperience({
         <header className="mb-8 border-b border-border pb-7 sm:mb-10 sm:pb-9">
           <div className="flex flex-wrap items-start justify-between gap-5">
             <div>
-              <p className="mb-3 font-mono text-label uppercase tracking-[0.16em] text-foreground-subtle">NOIRÉ // PRIVATE CLIENT COMMISSION</p>
-              <h1 className="font-display text-h1 leading-[1.04] text-foreground">Checkout demonstration<span className="text-accent">.</span></h1>
+              <p className="mb-3 font-mono text-label uppercase tracking-[0.16em] text-foreground-subtle">NOIRÉ // SECURE CHECKOUT</p>
+              <h1 className="font-display text-h1 leading-[1.04] text-foreground">Checkout<span className="text-accent">.</span></h1>
               <p className="mt-3 max-w-2xl text-small leading-relaxed text-foreground-muted sm:text-body">
-                Review the contact details, provisional courier estimate, and masked demo payment method. No payment or fulfillment service is connected.
+                Enter your contact and delivery details, choose how you would like to pay, and review your order. Pay in cash on delivery or by bank transfer — our team confirms every order before dispatch.
               </p>
             </div>
             <Link href="/cart" className="inline-flex min-h-11 items-center gap-2 border-b border-border-strong/70 font-mono text-[10px] uppercase tracking-[0.13em] text-foreground-muted hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground">
-              <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" /> Edit allocation bag
+              <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" /> Edit bag
             </Link>
           </div>
 
@@ -1234,7 +1227,7 @@ export function CheckoutExperience({
             {([
               ['client', '01', 'Client'],
               ['delivery', '02', 'Delivery'],
-              ['settlement', '03', 'Settlement'],
+              ['settlement', '03', 'Payment'],
               ['review', '04', 'Review'],
             ] as const).map(([section, number, label]) => (
               <button
@@ -1263,7 +1256,7 @@ export function CheckoutExperience({
             <div className="flex items-start gap-3">
               <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-danger" aria-hidden="true" />
               <div className="min-w-0">
-                <p className="font-mono text-label uppercase tracking-[0.13em] text-danger">Settlement needs attention</p>
+                <p className="font-mono text-label uppercase tracking-[0.13em] text-danger">Checkout needs attention</p>
                 <p className="mt-1.5 text-small leading-relaxed text-foreground">{generalError}</p>
                 <Link href="/cart" className="mt-2 inline-flex min-h-11 items-center border-b border-foreground font-mono text-[10px] uppercase tracking-[0.12em]">Review bag and continue</Link>
               </div>
@@ -1281,9 +1274,9 @@ export function CheckoutExperience({
                 <SectionHeading
                   number="01"
                   title="Client information"
-                  detail="Contact details attached only to this browser-local demo order record."
+                  detail="We use these details to confirm your order and coordinate delivery."
                   id="client-heading"
-                  requiredLabel="Required for local record"
+                  requiredLabel="Required"
                 />
                 <div className="grid grid-cols-1 gap-x-5 gap-y-5 sm:grid-cols-2">
                   <Field
@@ -1310,7 +1303,7 @@ export function CheckoutExperience({
                     value={customer.email}
                     onChange={(value) => setCustomerField('email', value)}
                     error={getFieldError(fieldErrors, 'customer.email')}
-                    hint="The browser-local demo order record will be associated with this email."
+                    hint="Your order confirmation will be sent to this email."
                     type="email"
                     autoComplete="email"
                     disabled={isWorking}
@@ -1330,7 +1323,7 @@ export function CheckoutExperience({
                 </div>
                 <p className="mt-5 flex items-start gap-2 border-t border-border pt-4 text-[11px] leading-relaxed text-foreground-subtle">
                   <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                  Client profile prefill is supported by the checkout state contract; authenticated customer details can populate this dossier when account services are connected.
+                  Signed-in customers can track this order from their account. Guests receive every update by email.
                 </p>
               </SectionFrame>
 
@@ -1341,7 +1334,7 @@ export function CheckoutExperience({
                 <SectionHeading
                   number="02"
                   title="Delivery address"
-                  detail="Destination details remain in the browser-local demo order; no delivery provider is connected."
+                  detail="Where should we deliver your order?"
                   id="delivery-heading"
                   requiredLabel="Required for local record"
                 />
@@ -1442,25 +1435,18 @@ export function CheckoutExperience({
                     autoComplete="shipping tel"
                     type="tel"
                     inputMode="tel"
-                    hint="Stored only in this browser-local demo order; no courier service is connected."
+                    hint="The courier may call this number on the day of delivery."
                     disabled={isWorking}
                   />
                 </div>
 
-                <aside role="note" className="mt-6 border-t border-border pt-5">
-                  <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-accent">Browser-local demo storage</p>
-                  <p className="mt-2 text-[11px] leading-relaxed text-foreground-muted">
-                    Contact and address drafts are kept in this tab&apos;s session storage. A placed demo order, including its contact and address details, is retained in this browser&apos;s local storage. These browser stores are not account-protected or encrypted by this application; use test contact details only.
-                  </p>
-                </aside>
-
                 <div className="mt-7 border-t border-border pt-6">
                   <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                     <div>
-                      <PanelLabel>Delivery estimate // demo</PanelLabel>
-                      <h3 className="mt-1.5 font-display text-base text-foreground">Demo delivery estimate</h3>
+                      <PanelLabel>Delivery option</PanelLabel>
+                      <h3 className="mt-1.5 font-display text-base text-foreground">Choose a delivery option</h3>
                     </div>
-                    {isLoadingShipping && <span className="inline-flex items-center gap-2 font-mono text-[9px] uppercase tracking-[0.12em] text-foreground-subtle"><RefreshCw className="h-3 w-3 animate-spin" aria-hidden="true" />Refreshing demo estimates</span>}
+                    {isLoadingShipping && <span className="inline-flex items-center gap-2 font-mono text-[9px] uppercase tracking-[0.12em] text-foreground-subtle"><RefreshCw className="h-3 w-3 animate-spin" aria-hidden="true" />Updating options</span>}
                   </div>
 
                   {shippingServiceError && (
@@ -1470,16 +1456,20 @@ export function CheckoutExperience({
                         type="button"
                         onClick={() => {
                           setShippingServiceError('');
-                          void getShippingMethods(shippingAddress.country, 0, cartSubtotal, appliedDiscount?.type === 'free_shipping')
-                            .then((methods) => {
-                              setShippingMethods(methods);
-                              if (methods[0]) handleShippingSelection(methods[0].id);
+                          void quoteShippingAction(shippingAddress.country, cartSubtotal, appliedDiscount?.type === 'free_shipping')
+                            .then((response) => {
+                              if (!response.ok) {
+                                setShippingServiceError(response.error);
+                                return;
+                              }
+                              setShippingMethods(response.data);
+                              if (response.data[0]) handleShippingSelection(response.data[0].id);
                             })
-                            .catch(() => setShippingServiceError('Demo delivery estimates remain unavailable. Retry later or return to your bag.'));
+                            .catch(() => setShippingServiceError('Delivery options are still unavailable. Retry later or return to your bag.'));
                         }}
                         className="mt-2 inline-flex min-h-11 items-center gap-2 border-b border-foreground font-mono text-[10px] uppercase tracking-[0.12em]"
                       >
-                        Retry demo estimate lookup <RefreshCw className="h-3 w-3" aria-hidden="true" />
+                        Retry <RefreshCw className="h-3 w-3" aria-hidden="true" />
                       </button>
                     </div>
                   )}
@@ -1512,7 +1502,7 @@ export function CheckoutExperience({
                               <span className="mt-1 block text-[10px] leading-relaxed text-foreground-subtle">{method.description}</span>
                             </span>
                             <span className="shrink-0 text-end font-mono text-xs tabular-nums text-foreground">
-                              {methodCost === 0 ? 'DEMO INCLUDED' : formatPrice(methodCost)}
+                              {methodCost === 0 ? 'INCLUDED' : formatPrice(methodCost)}
                             </span>
                           </label>
                         );
@@ -1521,7 +1511,7 @@ export function CheckoutExperience({
                   </fieldset>
                   <p className="mt-3 flex items-start gap-2 text-[10px] leading-relaxed text-foreground-subtle">
                     <Truck className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                    Static local demo estimates only: no live quote, insurance policy, booking, tracking, or dispatch is connected.
+                    Delivery windows are estimates and start once your order is confirmed. You will receive tracking details by email when it ships.
                   </p>
                 </div>
               </SectionFrame>
@@ -1532,115 +1522,48 @@ export function CheckoutExperience({
               >
                 <SectionHeading
                   number="03"
-                  title="Payment demonstration"
-                  detail="No payment provider is connected. This preview can create a pending local record only."
+                  title="Payment"
+                  detail="Choose how you would like to pay. Nothing is charged online — our team confirms the order with you first."
                   id="settlement-heading"
-                  requiredLabel="Sandbox input required"
+                  requiredLabel="Required"
                 />
-                <div className="mb-5 flex flex-wrap items-start justify-between gap-4 border border-border p-4 sm:p-5">
-                  <div className="flex items-start gap-3">
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center border border-border bg-surface-muted" aria-hidden="true">
-                      <CreditCard className="h-4 w-4" />
-                    </span>
-                    <div>
-                      <p className="font-mono text-[10px] uppercase tracking-[0.13em] text-foreground">Payment card</p>
-                      <p className="mt-1 text-[11px] leading-relaxed text-foreground-muted">Card fields are an isolated demo UI seam. A production integration must replace them with provider-hosted Elements.</p>
-                    </div>
+                <fieldset disabled={isWorking} aria-describedby={fieldErrors['payment.method'] ? 'payment-method-error' : undefined}>
+                  <legend className="sr-only">Payment method</legend>
+                  <div className="divide-y divide-border border-y border-border">
+                    {paymentOptions.map((option) => {
+                      const checked = paymentMethodType === option.id;
+                      const Icon = option.icon;
+                      return (
+                        <label
+                          key={option.id}
+                          className={`grid min-h-[88px] cursor-pointer grid-cols-[20px_40px_minmax(0,1fr)] items-start gap-3 py-4 transition-colors ${checked ? 'bg-surface-muted/50' : ''}`}
+                        >
+                          <input
+                            id={`payment-method-${option.id}`}
+                            type="radio"
+                            name="payment-method"
+                            value={option.id}
+                            checked={checked}
+                            onChange={() => handlePaymentSelection(option.id)}
+                            className="mt-1 h-4 w-4 accent-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground"
+                          />
+                          <span className="flex h-10 w-10 items-center justify-center border border-border bg-surface-muted" aria-hidden="true">
+                            <Icon className="h-4 w-4" />
+                          </span>
+                          <span className="min-w-0 pe-2">
+                            <span className="block font-mono text-[10px] uppercase tracking-[0.11em] text-foreground">{option.label}</span>
+                            <span className="mt-1 block text-[11px] leading-relaxed text-foreground-muted">{option.summary}</span>
+                            {checked && <span className="mt-2 block text-[11px] leading-relaxed text-foreground-subtle">{option.detail}</span>}
+                          </span>
+                        </label>
+                      );
+                    })}
                   </div>
-                  <span className="inline-flex items-center gap-1.5 border border-border px-2.5 py-1.5 font-mono text-[9px] uppercase tracking-[0.11em] text-foreground-subtle">
-                    <LockKeyhole className="h-3 w-3" aria-hidden="true" /> Demo adapter · no charge
-                  </span>
-                </div>
-
-                <div className="border border-accent/25 bg-accent/5 p-4 text-[11px] leading-relaxed text-foreground-muted">
-                  <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-accent">Security boundary // read before entry</p>
-                  <p className="mt-2">
-                    This frontend is not connected to a payment provider. Do not enter a real card. The local adapter accepts sandbox-only values for layout and failure-path testing; it stores no card number, security code, expiry, or provider token in application state or browser storage, and it does not authorize or capture funds.
-                  </p>
-                  <p className="mt-2 font-mono text-[10px] text-foreground-subtle">Sandbox path: a Luhn-valid test number ending in 0002 triggers a decline.</p>
-                </div>
-
-                <div className="mt-6 grid grid-cols-1 gap-x-5 gap-y-5 sm:grid-cols-2">
-                  <div className="sm:col-span-2">
-                    <label htmlFor="payment-cardholder" className="mb-2 block font-mono text-label uppercase tracking-[0.12em] text-foreground">Cardholder name</label>
-                    <input
-                      id="payment-cardholder"
-                      type="text"
-                      value={paymentCardholder}
-                      onChange={(event) => {
-                        setPaymentCardholder(event.target.value);
-                        handleCardFieldChange('cardholder');
-                      }}
-                      autoComplete="off"
-                      maxLength={120}
-                      required
-                      disabled={isWorking}
-                      aria-invalid={Boolean(fieldErrors['payment.cardholder'])}
-                      aria-describedby={fieldErrors['payment.cardholder'] ? 'payment-cardholder-error' : undefined}
-                      className={`h-11 w-full rounded-xs border bg-surface px-3.5 text-body text-foreground focus:outline-none ${fieldErrors['payment.cardholder'] ? 'border-danger focus:border-danger' : 'border-border focus:border-foreground'}`}
-                    />
-                    {fieldErrors['payment.cardholder'] && <p id="payment-cardholder-error" role="alert" className="mt-2 font-mono text-caption text-danger">{fieldErrors['payment.cardholder']}</p>}
-                  </div>
-                  <div className="sm:col-span-2">
-                    <label htmlFor="payment-card-number" className="mb-2 block font-mono text-label uppercase tracking-[0.12em] text-foreground">Card number</label>
-                    <input
-                      ref={cardNumberRef}
-                      id="payment-card-number"
-                      type="text"
-                      inputMode="numeric"
-                      autoComplete="off"
-                      maxLength={23}
-                      placeholder="Sandbox card number"
-                      required
-                      disabled={isWorking}
-                      aria-invalid={Boolean(fieldErrors['payment.cardNumber'])}
-                      aria-describedby={fieldErrors['payment.cardNumber'] ? 'payment-card-number-error' : 'payment-sandbox-hint'}
-                      onChange={() => handleCardFieldChange('cardNumber')}
-                      className={`h-11 w-full rounded-xs border bg-surface px-3.5 font-mono text-sm tracking-[0.1em] text-foreground placeholder:font-sans placeholder:tracking-normal focus:outline-none ${fieldErrors['payment.cardNumber'] ? 'border-danger focus:border-danger' : 'border-border focus:border-foreground'}`}
-                    />
-                    {fieldErrors['payment.cardNumber'] && <p id="payment-card-number-error" role="alert" className="mt-2 font-mono text-caption text-danger">{fieldErrors['payment.cardNumber']}</p>}
-                  </div>
-                  <div>
-                    <label htmlFor="payment-expiry" className="mb-2 block font-mono text-label uppercase tracking-[0.12em] text-foreground">Expiry // MM/YY</label>
-                    <input
-                      ref={expiryRef}
-                      id="payment-expiry"
-                      type="text"
-                      inputMode="numeric"
-                      autoComplete="off"
-                      maxLength={5}
-                      placeholder="MM/YY"
-                      required
-                      disabled={isWorking}
-                      aria-invalid={Boolean(fieldErrors['payment.expiry'])}
-                      aria-describedby={fieldErrors['payment.expiry'] ? 'payment-expiry-error' : undefined}
-                      onChange={() => handleCardFieldChange('expiry')}
-                      className={`h-11 w-full rounded-xs border bg-surface px-3.5 font-mono text-sm tracking-[0.1em] text-foreground placeholder:font-sans placeholder:tracking-normal focus:outline-none ${fieldErrors['payment.expiry'] ? 'border-danger focus:border-danger' : 'border-border focus:border-foreground'}`}
-                    />
-                    {fieldErrors['payment.expiry'] && <p id="payment-expiry-error" role="alert" className="mt-2 font-mono text-caption text-danger">{fieldErrors['payment.expiry']}</p>}
-                  </div>
-                  <div>
-                    <label htmlFor="payment-cvc" className="mb-2 block font-mono text-label uppercase tracking-[0.12em] text-foreground">Security code // CVC</label>
-                    <input
-                      ref={cvcRef}
-                      id="payment-cvc"
-                      type="password"
-                      inputMode="numeric"
-                      autoComplete="off"
-                      maxLength={4}
-                      placeholder="•••"
-                      required
-                      disabled={isWorking}
-                      aria-invalid={Boolean(fieldErrors['payment.cvc'])}
-                      aria-describedby={fieldErrors['payment.cvc'] ? 'payment-cvc-error' : undefined}
-                      onChange={() => handleCardFieldChange('cvc')}
-                      className={`h-11 w-full rounded-xs border bg-surface px-3.5 font-mono text-sm tracking-[0.1em] text-foreground placeholder:font-sans placeholder:tracking-normal focus:outline-none ${fieldErrors['payment.cvc'] ? 'border-danger focus:border-danger' : 'border-border focus:border-foreground'}`}
-                    />
-                    {fieldErrors['payment.cvc'] && <p id="payment-cvc-error" role="alert" className="mt-2 font-mono text-caption text-danger">{fieldErrors['payment.cvc']}</p>}
-                  </div>
-                </div>
-                <p id="payment-sandbox-hint" className="mt-3 text-[10px] leading-relaxed text-foreground-subtle">
-                  Raw entry remains in these isolated, uncontrolled fields only. The service receives a masked demo method (brand and last four); raw PAN, CVC, and expiry never enter React state, CommerceContext, sessionStorage, or localStorage. A live release must use the payment provider&apos;s hosted Elements.
+                </fieldset>
+                {fieldErrors['payment.method'] && <p id="payment-method-error" role="alert" className="mt-2 font-mono text-caption text-danger">{fieldErrors['payment.method']}</p>}
+                <p className="mt-3 flex items-start gap-2 text-[10px] leading-relaxed text-foreground-subtle">
+                  <LockKeyhole className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                  No card details are collected on this site. Your order stays reserved while payment is pending and is marked paid once our team confirms it.
                 </p>
 
                 <div className="mt-6 border-t border-border pt-5">
@@ -1704,9 +1627,9 @@ export function CheckoutExperience({
                   <SectionHeading
                     number="04"
                     title="Final review"
-                    detail="Review the contact, demo delivery estimate, masked sandbox method, and instruments before saving a browser-local record. No payment or fulfillment operation will occur."
+                    detail="Check your details before placing the order. You can still edit any section."
                     id="review-heading"
-                    requiredLabel="Demo-only review"
+                    requiredLabel="Final step"
                   />
                   <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                     <ReviewBlock
@@ -1742,7 +1665,7 @@ export function CheckoutExperience({
                       </ReviewBlock>
                     )}
                     <ReviewBlock
-                      title="Courier method"
+                      title="Delivery option"
                       editLabel="Edit delivery"
                       onEdit={() => scrollToSection('delivery')}
                     >
@@ -1751,14 +1674,16 @@ export function CheckoutExperience({
                       <p className="mt-1 text-small text-foreground-muted">{selectedShippingOption?.estimatedDispatch}</p>
                     </ReviewBlock>
                     <ReviewBlock
-                      title="Settlement method"
+                      title="Payment method"
                       editLabel="Edit payment"
                       onEdit={() => scrollToSection('settlement')}
                     >
-                      <p className="text-small font-medium text-foreground">
-                        {reviewPaymentMethod ? `${reviewPaymentMethod.brand} •••• ${reviewPaymentMethod.last4}` : 'Re-enter sandbox card details to review'}
+                      <p className="text-small font-medium text-foreground">{paymentLabel(reviewPaymentMethod ?? paymentMethodType)}</p>
+                      <p className="mt-1 text-small text-foreground-muted">
+                        {(reviewPaymentMethod ?? paymentMethodType) === 'bank_transfer'
+                          ? 'Bank details follow in your confirmation; we dispatch once the transfer is confirmed.'
+                          : 'Pay the courier when your order arrives.'}
                       </p>
-                      <p className="mt-1 text-small text-foreground-muted">No live authorization or capture will occur in this demo.</p>
                     </ReviewBlock>
                   </div>
 
@@ -1766,7 +1691,7 @@ export function CheckoutExperience({
                     <div className="flex flex-wrap items-end justify-between gap-3">
                       <div>
                         <PanelLabel>Items // {itemCountLabel}</PanelLabel>
-                        <h3 className="mt-1.5 font-display text-base text-foreground">In this allocation</h3>
+                        <h3 className="mt-1.5 font-display text-base text-foreground">In this order</h3>
                       </div>
                       <Link href="/cart" className="inline-flex min-h-11 items-center border-b border-border-strong/70 font-mono text-[9px] uppercase tracking-[0.12em] text-foreground-muted">Edit items</Link>
                     </div>
@@ -1774,14 +1699,14 @@ export function CheckoutExperience({
                   </div>
                   <div className="mt-2 grid grid-cols-1 gap-6 border-t border-border pt-5 sm:grid-cols-2">
                     <div>
-                      <PanelLabel>Applied privilege</PanelLabel>
+                      <PanelLabel>Discount</PanelLabel>
                       <p className="mt-2 text-small text-foreground">
-                        {appliedDiscount ? `${appliedDiscount.code} — ${appliedDiscount.description}` : 'No allocation code applied'}
+                        {appliedDiscount ? `${appliedDiscount.code} — ${appliedDiscount.description}` : 'No discount code applied'}
                       </p>
                     </div>
                     <div className="sm:text-end">
-                      <PanelLabel>Tax telemetry</PanelLabel>
-                      <p className="mt-2 text-small text-foreground">{taxAmount === 0 ? 'Calculated by destination service when connected.' : formatPrice(taxAmount)}</p>
+                      <PanelLabel>Tax</PanelLabel>
+                      <p className="mt-2 text-small text-foreground">{taxAmount === 0 ? 'Included in the listed prices.' : formatPrice(taxAmount)}</p>
                     </div>
                   </div>
                   <div className="mt-5 border-t border-border pt-5">
@@ -1794,8 +1719,8 @@ export function CheckoutExperience({
                   </div>
 
                   <div className="mt-6 border border-accent/30 bg-accent/5 p-4 text-[11px] leading-relaxed text-foreground-muted">
-                    <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-accent">Demo settlement // pending</p>
-                    <p className="mt-2">Place Allocation creates a pending allocation record for frontend verification. It does not charge a card, reserve live inventory, or initiate fulfillment. Settlement must be confirmed by a real provider before this order can be marked paid.</p>
+                    <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-accent">What happens next</p>
+                    <p className="mt-2">Placing the order reserves your items and sends a confirmation email with your order number. Our team then confirms the order with you and arranges payment on delivery or by bank transfer before dispatch.</p>
                   </div>
                 </section>
               )}
@@ -1804,7 +1729,7 @@ export function CheckoutExperience({
                 <Link href="/cart" className="inline-flex min-h-11 items-center gap-2 font-mono text-[10px] uppercase tracking-[0.12em] text-foreground-muted hover:text-foreground">
                   <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" /> Back to bag
                 </Link>
-                <p className="flex items-center gap-2 text-[10px] text-foreground-subtle"><ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" /> Encrypted provider boundary required for production</p>
+                <p className="flex items-center gap-2 text-[10px] text-foreground-subtle"><ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" /> Your details are transmitted securely and stored only with your order</p>
               </div>
             </div>
 
@@ -1812,7 +1737,7 @@ export function CheckoutExperience({
               <div className="border border-border bg-surface p-5 sm:p-7 lg:sticky lg:top-28 lg:p-8">
                 <div className="flex items-start justify-between gap-4 border-b border-border pb-5">
                   <div>
-                    <PanelLabel>Allocation manifest // browser-local demo</PanelLabel>
+                    <PanelLabel>Order summary</PanelLabel>
                     <h2 className="mt-2 font-display text-h3 text-foreground">Summary</h2>
                   </div>
                   <span className="font-mono text-[10px] tabular-nums text-foreground-subtle">{itemCountLabel}</span>
@@ -1825,7 +1750,7 @@ export function CheckoutExperience({
                 <div className="border-t border-border pt-5">
                   <div className="mb-3 flex items-center gap-2">
                     <Tag className="h-3.5 w-3.5 text-foreground-subtle" aria-hidden="true" />
-                    <PanelLabel>Allocation privilege code</PanelLabel>
+                    <PanelLabel>Discount code</PanelLabel>
                   </div>
                   {appliedDiscount ? (
                     <div className="border border-success/30 bg-success/5 p-3.5">
@@ -1839,7 +1764,7 @@ export function CheckoutExperience({
                           type="button"
                           onClick={() => {
                             removeDiscountCode();
-                            setPromoMessage('Allocation code removed.');
+                            setPromoMessage('Discount code removed.');
                             setPromoError(false);
                           }}
                           className="min-h-11 shrink-0 border-b border-border-strong font-mono text-[9px] uppercase tracking-[0.1em] text-foreground-muted hover:text-danger"
@@ -1890,11 +1815,11 @@ export function CheckoutExperience({
                   aria-expanded={showTaxNote}
                   className="mt-4 inline-flex min-h-11 items-center gap-2 text-start font-mono text-[9px] uppercase tracking-[0.11em] text-foreground-subtle hover:text-foreground"
                 >
-                  <Info className="h-3 w-3" aria-hidden="true" /> Tax calculation architecture
+                  <Info className="h-3 w-3" aria-hidden="true" /> About taxes and duties
                 </button>
                 {showTaxNote && (
                   <p className="mb-3 border-s border-border-strong ps-3 text-[10px] leading-relaxed text-foreground-subtle">
-                    Tax is intentionally shown as a pending estimate in this frontend. A destination-aware tax provider must return an authoritative quote before live order finalization.
+                    Prices include applicable taxes. Import duties, where they apply, are settled by the recipient on delivery.
                   </p>
                 )}
 
@@ -1911,15 +1836,15 @@ export function CheckoutExperience({
                   rightIcon={!isWorking ? <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" /> : undefined}
                   className="mt-5 min-h-12"
                 >
-                  {activeSection === 'review' ? 'Place Allocation' : 'Review & Place Order'}
+                  {activeSection === 'review' ? 'Place Order' : 'Review & Place Order'}
                 </Button>
                 <p className="mt-3 text-center font-mono text-[9px] uppercase tracking-[0.1em] text-foreground-subtle">
-                  Demo only // no charge or live authorization
+                  {`${paymentLabel(paymentMethodType)} // confirmed by our team before dispatch`}
                 </p>
                 <div className="mt-5 grid grid-cols-3 gap-2 border-t border-border pt-4 text-center">
-                  <div className="px-1"><ShieldCheck className="mx-auto h-4 w-4 text-foreground-muted" aria-hidden="true" /><span className="mt-2 block font-mono text-[8px] uppercase tracking-[0.1em] text-foreground-subtle">Demo<br />adapter</span></div>
-                  <div className="border-x border-border px-1"><MapPin className="mx-auto h-4 w-4 text-foreground-muted" aria-hidden="true" /><span className="mt-2 block font-mono text-[8px] uppercase tracking-[0.1em] text-foreground-subtle">Courier<br />estimate</span></div>
-                  <div className="px-1"><LockKeyhole className="mx-auto h-4 w-4 text-foreground-muted" aria-hidden="true" /><span className="mt-2 block font-mono text-[8px] uppercase tracking-[0.1em] text-foreground-subtle">No payment<br />token stored</span></div>
+                  <div className="px-1"><ShieldCheck className="mx-auto h-4 w-4 text-foreground-muted" aria-hidden="true" /><span className="mt-2 block font-mono text-[8px] uppercase tracking-[0.1em] text-foreground-subtle">Order<br />confirmation</span></div>
+                  <div className="border-x border-border px-1"><MapPin className="mx-auto h-4 w-4 text-foreground-muted" aria-hidden="true" /><span className="mt-2 block font-mono text-[8px] uppercase tracking-[0.1em] text-foreground-subtle">Tracked<br />delivery</span></div>
+                  <div className="px-1"><LockKeyhole className="mx-auto h-4 w-4 text-foreground-muted" aria-hidden="true" /><span className="mt-2 block font-mono text-[8px] uppercase tracking-[0.1em] text-foreground-subtle">No card<br />details stored</span></div>
                 </div>
               </div>
             </aside>
@@ -1940,7 +1865,7 @@ export function CheckoutExperience({
                 withArrow={activeSection === 'review' ? undefined : 'right'}
                 className="min-h-12 max-w-[58%] px-4 text-[10px] leading-tight"
               >
-                {activeSection === 'review' ? 'Place Allocation' : 'Review & Place Order'}
+                {activeSection === 'review' ? 'Place Order' : 'Review & Place Order'}
               </Button>
             </div>
           </div>

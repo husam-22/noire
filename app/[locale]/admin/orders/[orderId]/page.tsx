@@ -1,5 +1,9 @@
+import { adminGetOrder } from '@/lib/services/supabase/admin';
 import { AdminOrderDossier } from '@/components/admin';
 
-export default function AdminOrderDossierPage({ params }: { params: { orderId: string } }) {
-  return <AdminOrderDossier orderId={params.orderId} />;
+export const dynamic = 'force-dynamic';
+
+export default async function AdminOrderDossierPage({ params }: { params: { orderId: string } }) {
+  const order = await adminGetOrder(params.orderId);
+  return <AdminOrderDossier order={order} />;
 }

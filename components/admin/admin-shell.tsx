@@ -11,6 +11,7 @@ import {
   Command,
   FileText,
   LayoutDashboard,
+  LogOut,
   Menu,
   Percent,
   Search,
@@ -19,7 +20,7 @@ import {
   Warehouse,
   X,
 } from 'lucide-react';
-import { Badge, Button, Drawer } from '@/components/ui';
+import { Button, Drawer } from '@/components/ui';
 import { AdminCommandPalette } from '@/components/admin/admin-command-palette';
 import { cn } from '@/lib/utils';
 
@@ -77,8 +78,8 @@ function AdminNavigation({ onNavigate }: { onNavigate?: () => void }) {
         <ul className="space-y-1">
           {[
             { href: '/', label: 'Storefront' },
-            { href: '/account', label: 'Client Atelier' },
-            { href: '/shop', label: 'View Store' },
+            { href: '/account', label: 'My account' },
+            { href: '/shop', label: 'Shop' },
           ].map((item) => (
             <li key={item.href}>
               <Link
@@ -96,7 +97,26 @@ function AdminNavigation({ onNavigate }: { onNavigate?: () => void }) {
   );
 }
 
-export function AdminShell({ children }: { children: React.ReactNode }) {
+export interface AdminShellProps {
+  children: React.ReactNode;
+  /** Signed-in staff member (shown in the sidebar). */
+  user?: { email: string; role: string } | null;
+}
+
+function SignOutForm({ className }: { className?: string }) {
+  return (
+    <form action="/api/auth/sign-out" method="post" className={className}>
+      <button
+        type="submit"
+        className="inline-flex min-h-11 w-full items-center justify-center gap-2 border border-border-inverse px-3 font-mono text-[9px] uppercase tracking-[0.12em] text-foreground-subtle transition-colors hover:border-foreground-inverse hover:text-foreground-inverse focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground"
+      >
+        <LogOut className="h-3.5 w-3.5" aria-hidden="true" /> Sign out
+      </button>
+    </form>
+  );
+}
+
+export function AdminShell({ children, user = null }: AdminShellProps) {
   const [isNavigationOpen, setIsNavigationOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
@@ -126,8 +146,13 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             <AdminNavigation />
           </div>
           <div className="border-t border-border-inverse pt-4">
-            <Badge variant="warning" className="w-full justify-center">LOCAL / DEMO MODE</Badge>
-            <p className="mt-3 px-2 font-mono text-[8px] uppercase leading-relaxed tracking-[0.12em] text-foreground-subtle">ADMIN AUTHENTICATION IS NOT IMPLEMENTED · no production backend · no real payment or dispatch controls</p>
+            {user && (
+              <p className="mb-3 px-2 font-mono text-[8px] uppercase leading-relaxed tracking-[0.12em] text-foreground-subtle">
+                <span className="block truncate text-foreground-inverse">{user.email}</span>
+                <span className="block">{user.role}</span>
+              </p>
+            )}
+            <SignOutForm />
           </div>
         </aside>
 
@@ -151,7 +176,6 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                 </div>
               </div>
               <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-                <Badge variant="warning" className="hidden md:inline-flex">LOCAL / DEMO</Badge>
                 <button
                   type="button"
                   onClick={() => setIsSearchOpen(true)}
@@ -171,8 +195,8 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           </div>
           <footer className="border-t border-border bg-surface px-4 py-4 sm:px-6 lg:px-8">
             <div className="mx-auto flex max-w-[1560px] flex-wrap items-center justify-between gap-2 font-mono text-[8px] uppercase tracking-[0.12em] text-foreground-subtle">
-              <span>NOIRÉ // Private operations room</span>
-              <span>Preview only · no connected identity or infrastructure</span>
+              <span>NOIRÉ // Operations</span>
+              <span>{user ? `Signed in as ${user.email}` : 'Staff access'}</span>
             </div>
           </footer>
         </div>
@@ -182,7 +206,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         isOpen={isNavigationOpen}
         onClose={() => setIsNavigationOpen(false)}
         title="Command Center"
-        subtitle="NOIRÉ // LOCAL DEMO MODE"
+        subtitle="NOIRÉ // OPERATIONS"
         side="left"
         size="md"
         className="bg-surface-inverse text-foreground-inverse"
@@ -193,6 +217,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             <span className="mt-1 block font-mono text-[8px] uppercase tracking-[0.16em] text-foreground-subtle">Operations</span>
           </Link>
           <AdminNavigation onNavigate={() => setIsNavigationOpen(false)} />
+          <SignOutForm className="mt-6 border-t border-border-inverse pt-4" />
         </div>
       </Drawer>
       <AdminCommandPalette isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />

@@ -16,7 +16,7 @@ import { mapCategory, mapCollection, mapProduct, mapReview, mapShippingMethod } 
 type Locale = Enums<'locale_code'>;
 
 /**
- * Supabase-backed catalog reads. Mirrors the signatures of `@/lib/mock-api`
+ * Supabase-backed catalog reads
  * so `lib/services/catalog.ts` can switch adapters per `NOIRE_DATA_SOURCE`.
  * Translations are joined here, so callers get locale-ready copy directly.
  */

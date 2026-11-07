@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import { ShieldAlert } from 'lucide-react';
 import { Badge, TechnicalCode, Skeleton } from '@/components/ui';
 import type { Order, Product } from '@/types';
 import { orderStatusLabel, paymentStatusLabel } from '@/lib/account/order-utils';
@@ -34,22 +33,6 @@ export function AdminPageHeader({
   );
 }
 
-export function AdminLocalNotice({
-  children = 'ADMIN AUTHENTICATION IS NOT IMPLEMENTED. This local demo command center has no production backend or authorization boundary.',
-}: {
-  children?: React.ReactNode;
-}) {
-  return (
-    <aside role="note" className="mb-6 flex items-start gap-3 border border-warning/30 bg-warning-surface/60 px-4 py-3.5 text-foreground">
-      <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-warning" aria-hidden="true" />
-      <div className="min-w-0">
-        <p className="font-mono text-[9px] font-medium uppercase tracking-[0.14em] text-warning">Local / demo boundary</p>
-        <p className="mt-1 text-[11px] leading-relaxed text-foreground-muted">{children}</p>
-      </div>
-    </aside>
-  );
-}
-
 export function AdminMetric({
   label,
   value,
@@ -65,7 +48,7 @@ export function AdminMetric({
     <article className="min-w-0 border border-border bg-surface p-4 sm:p-5">
       <div className="flex items-start justify-between gap-3 border-b border-border pb-3">
         <TechnicalCode>{index}</TechnicalCode>
-        <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-foreground-subtle">Local</span>
+        <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-foreground-subtle">Live</span>
       </div>
       <p className="mt-4 font-mono text-[9px] uppercase tracking-[0.13em] text-foreground-muted">{label}</p>
       <p className="mt-1.5 break-words font-display text-3xl tabular-nums text-foreground">{value}</p>
@@ -75,7 +58,7 @@ export function AdminMetric({
 }
 
 export function AdminLoadingState({
-  label = 'Loading local operations data',
+  label = 'Loading',
   rows = 5,
 }: {
   label?: string;
@@ -137,4 +120,19 @@ export function AdminSurface({
   className?: string;
 }) {
   return <section className={cn('border border-border bg-surface', className)}>{children}</section>;
+}
+
+export function inventoryState(product: Product): {
+  label: string;
+  variant: 'success' | 'warning' | 'danger' | 'default' | 'accent';
+} {
+  if (product.status !== 'active') return { label: 'Unavailable', variant: 'default' };
+  if (product.stockStatus === 'pre_order') return { label: 'Pre-order', variant: 'accent' };
+  if (product.stockStatus === 'out_of_stock' || product.inventoryCount <= 0) {
+    return { label: 'Out of stock', variant: 'danger' };
+  }
+  if (product.stockStatus === 'low_stock' || product.inventoryCount <= 5) {
+    return { label: 'Low stock', variant: 'warning' };
+  }
+  return { label: 'In stock', variant: 'success' };
 }

@@ -300,9 +300,9 @@ export interface ShippingMethod {
   description: string;
 }
 
-export type PaymentProvider = 'demo' | 'stripe_elements' | 'apple_pay' | 'studio_wire';
+export type PaymentProvider = 'demo' | 'stripe_elements' | 'apple_pay' | 'studio_wire' | 'manual';
 
-export type PaymentMethodType = 'card' | 'apple_pay' | 'wire_transfer';
+export type PaymentMethodType = 'card' | 'apple_pay' | 'wire_transfer' | 'cash_on_delivery' | 'bank_transfer';
 
 /** Safe, tokenized metadata only. Never contains PAN, CVC, or expiry credentials. */
 export interface PaymentMethod {
@@ -436,7 +436,7 @@ export interface CustomerSessionIdentity {
  * only a future authoritative identity provider may return `authenticated`.
  */
 export type CustomerSession =
-  | { status: 'guest'; source: 'preview' }
+  | { status: 'guest'; source: 'none' }
   | {
       status: 'authenticated';
       source: 'provider';

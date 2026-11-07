@@ -1,52 +1,42 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import Image from 'next/image';
 import { Link } from '@/i18n/navigation';
 import { ArrowLeft, ArrowUpRight, FileText, Mail, Truck } from 'lucide-react';
-import { Button, EmptyState, Modal, PriceDisplay, TechnicalCode } from '@/components/ui';
+import type { Order } from '@/types';
+import { EmptyState, PriceDisplay, TechnicalCode } from '@/components/ui';
 import { Container } from '@/components/layout';
-import { useCommerce } from '@/lib/context/commerce-context';
-import { AccountOrderSkeleton } from '@/components/account/account-skeleton';
 import {
-  displayedFulfillmentStatusLabel,
-  displayedOrderStatusLabel,
+  fulfillmentStatusLabel,
+  orderStatusLabel,
   formatOrderDate,
-  hasLocalDemoStatusOverride,
   orderTotals,
   orderUnitCount,
   paymentStatusLabel,
 } from '@/lib/account/order-utils';
 import { formatPrice } from '@/lib/utils';
+import { useStorefrontContent } from '@/lib/context/storefront-content-context';
 
-export function AccountOrderDetail({ orderId }: { orderId: string }) {
-  const { getPlacedOrderById, isCartHydrated } = useCommerce();
-  const [isSupportOpen, setIsSupportOpen] = useState(false);
-  const order = getPlacedOrderById(orderId);
+const SUPPORT_EMAIL = 'studio@noire.example';
 
-  if (!isCartHydrated) {
-    return (
-      <main id="main-content" className="bg-background py-10 text-foreground sm:py-14">
-        <Container size="wide"><AccountOrderSkeleton /></Container>
-      </main>
-    );
-  }
-
+export function AccountOrderDetail({ order }: { order: Order | null }) {
+  const storefront = useStorefrontContent();
   if (!order) {
     return (
       <main id="main-content" className="bg-background py-10 text-foreground sm:py-16">
         <Container size="wide">
           <nav aria-label="Breadcrumb" className="mb-7 font-mono text-[9px] uppercase tracking-[0.12em] text-foreground-subtle">
-            <Link href="/account" className="inline-flex min-h-11 items-center hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground">Private Client Atelier</Link>
+            <Link href="/account" className="inline-flex min-h-11 items-center hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground">My Account</Link>
             <span aria-hidden="true" className="px-2">/</span>
-            <span aria-current="page">Order Dossier</span>
+            <span aria-current="page">Order</span>
           </nav>
           <EmptyState
-            code="ERR // ORDER DOSSIER NOT LOCATED"
-            title="This local order record is unavailable."
-            description="The account preview can inspect only orders stored in this browser’s existing commerce context. It does not query the shared mock admin order archive or expose another customer’s record."
+            code="ERR // ORDER NOT FOUND"
+            title="We couldn't find this order."
+            description="The order may belong to a different account, or the link may be incomplete. Your orders are listed in your account."
             icon={<FileText className="h-5 w-5" aria-hidden="true" />}
-            primaryAction={<Link href="/account#order-archive" className="inline-flex min-h-11 items-center gap-2 border border-foreground bg-foreground px-4 font-mono text-[9px] uppercase tracking-[0.12em] text-background hover:bg-foreground/90">Return to Order Archive <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" /></Link>}
+            primaryAction={<Link href="/account#order-archive" className="inline-flex min-h-11 items-center gap-2 border border-foreground bg-foreground px-4 font-mono text-[9px] uppercase tracking-[0.12em] text-background hover:bg-foreground/90">Back to my orders <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" /></Link>}
             secondaryAction={<Link href="/shop" className="inline-flex min-h-11 items-center border-b border-border px-1 font-mono text-[9px] uppercase tracking-[0.12em] text-foreground-muted hover:text-foreground">Browse instruments</Link>}
           />
         </Container>
@@ -56,9 +46,11 @@ export function AccountOrderDetail({ orderId }: { orderId: string }) {
 
   const totals = orderTotals(order);
   const isPendingSettlement = order.status === 'pending_settlement';
-  const hasLocalAdminStatusOverride = hasLocalDemoStatusOverride(order);
+  const showBankDetails = order.paymentStatus === 'pending' && order.paymentSummary?.methodType === 'bank_transfer' && Boolean(storefront.bankTransferInstructions);
+  const supportLine = [storefront.supportEmail, storefront.supportPhone].filter(Boolean).join(' · ');
   const completedTimeline = order.timeline.filter((event) => event.completed);
-  const shipmentStatusRecorded = !hasLocalAdminStatusOverride && (order.status === 'shipped' || order.status === 'delivered');
+  const shipmentStatusRecorded = order.status === 'shipped' || order.status === 'delivered';
+  const supportHref = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(`Order ${order.orderNumber}`)}`;
 
   return (
     <>
@@ -67,9 +59,9 @@ export function AccountOrderDetail({ orderId }: { orderId: string }) {
           <Container size="wide" className="pb-7 pt-24 sm:pb-9">
             <nav aria-label="Breadcrumb" className="mb-6">
               <ol className="flex flex-wrap items-center gap-2 font-mono text-[9px] uppercase tracking-[0.12em] text-foreground-subtle">
-                <li><Link href="/account" className="inline-flex min-h-11 items-center transition-colors hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground">Private Client Atelier</Link></li>
+                <li><Link href="/account" className="inline-flex min-h-11 items-center transition-colors hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground">My Account</Link></li>
                 <li aria-hidden="true">/</li>
-                <li><Link href="/account#order-archive" className="inline-flex min-h-11 items-center transition-colors hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground">Order Archive</Link></li>
+                <li><Link href="/account#order-archive" className="inline-flex min-h-11 items-center transition-colors hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground">Orders</Link></li>
                 <li aria-hidden="true">/</li>
                 <li aria-current="page" className="text-foreground">{order.orderNumber}</li>
               </ol>
@@ -77,19 +69,19 @@ export function AccountOrderDetail({ orderId }: { orderId: string }) {
 
             <div className="grid grid-cols-1 items-end gap-6 lg:grid-cols-12 lg:gap-8">
               <div className="min-w-0 lg:col-span-8">
-                <TechnicalCode>Order dossier // Browser-local demonstration record</TechnicalCode>
+                <TechnicalCode>Order // {orderStatusLabel(order.status)}</TechnicalCode>
                 <h1 className="mt-3 break-words font-display text-3xl leading-tight tracking-tight text-foreground sm:text-4xl lg:text-5xl">
                   {order.orderNumber}
                 </h1>
                 <p className="mt-3 text-small leading-relaxed text-foreground-muted">
-                  An order record held in this browser&apos;s existing commerce context. It is not an authenticated customer or server-verified account record.
+                  Placed {formatOrderDate(order.createdAt)} · {order.paymentMethod}. Every status change is recorded below as it happens.
                 </p>
               </div>
               <dl aria-live="polite" className="grid grid-cols-2 gap-2 lg:col-span-4">
-                <OrderMeta label="Created" value={formatOrderDate(order.createdAt)} />
+                <OrderMeta label="Placed" value={formatOrderDate(order.createdAt)} />
                 <OrderMeta label="Instruments" value={`${String(orderUnitCount(order)).padStart(2, '0')} units`} />
-                <OrderMeta label="Settlement" value={paymentStatusLabel(order.paymentStatus)} />
-                <OrderMeta label="Fulfillment" value={displayedFulfillmentStatusLabel(order)} />
+                <OrderMeta label="Payment" value={paymentStatusLabel(order.paymentStatus)} />
+                <OrderMeta label="Fulfillment" value={fulfillmentStatusLabel(order.status)} />
               </dl>
             </div>
           </Container>
@@ -98,26 +90,28 @@ export function AccountOrderDetail({ orderId }: { orderId: string }) {
         <Container size="wide" className="py-7 sm:py-10">
           {isPendingSettlement && (
             <section role="status" aria-live="polite" className="mb-6 border border-accent/30 bg-accent/5 p-4 sm:p-5">
-              <p className="font-mono text-[9px] uppercase tracking-[0.13em] text-accent">Pending settlement // demonstration record</p>
+              <p className="font-mono text-[9px] uppercase tracking-[0.13em] text-accent">Awaiting confirmation</p>
               <p className="mt-2 max-w-4xl text-small leading-relaxed text-foreground-muted">
-                No payment has been authorized or captured. This pending-settlement record does not reserve inventory, and fulfillment has not started.
+                Thank you — your order is reserved. Our team will contact you to confirm it and arrange payment ({order.paymentMethod}). Dispatch starts once the order is confirmed.
               </p>
-            </section>
-          )}
-          {hasLocalAdminStatusOverride && (
-            <section role="status" aria-live="polite" className="mb-6 border border-accent/30 bg-accent/5 p-4 sm:p-5">
-              <p className="font-mono text-[9px] uppercase tracking-[0.13em] text-accent">Local demo status override</p>
-              <p className="mt-2 max-w-4xl text-small leading-relaxed text-foreground-muted">An internal preview action changed this browser-local order state. It does not confirm payment, dispatch, delivery, or any real-world fulfillment event.</p>
+              {showBankDetails && (
+                <div className="mt-4 border border-border bg-background p-4">
+                  <p className="font-mono text-[9px] uppercase tracking-[0.13em] text-foreground-subtle">Bank details</p>
+                  <pre className="mt-2 whitespace-pre-wrap font-sans text-small leading-relaxed text-foreground">{storefront.bankTransferInstructions}</pre>
+                  <p className="mt-2 font-mono text-[9px] uppercase tracking-[0.13em] text-foreground-subtle">Reference // {order.orderNumber}</p>
+                </div>
+              )}
+              {supportLine && <p className="mt-3 text-small text-foreground-muted">Questions? Contact us at {supportLine}.</p>}
             </section>
           )}
 
           <div className="mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
             <div className="flex flex-wrap gap-x-5 gap-y-2 font-mono text-[9px] uppercase tracking-[0.11em] text-foreground-subtle">
-              <span>Order phase // {displayedOrderStatusLabel(order)}</span>
-              <span>Settlement // {paymentStatusLabel(order.paymentStatus)}</span>
+              <span>Status // {orderStatusLabel(order.status)}</span>
+              <span>Payment // {paymentStatusLabel(order.paymentStatus)}</span>
             </div>
             <Link href="/account#order-archive" className="inline-flex min-h-11 items-center gap-2 border-b border-border px-1 font-mono text-[9px] uppercase tracking-[0.11em] text-foreground-muted hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground">
-              <ArrowLeft className="h-3 w-3" aria-hidden="true" /> Order Archive
+              <ArrowLeft className="h-3 w-3" aria-hidden="true" /> All orders
             </Link>
           </div>
 
@@ -125,8 +119,8 @@ export function AccountOrderDetail({ orderId }: { orderId: string }) {
             <section aria-labelledby="dossier-items-heading" className="min-w-0 border border-border bg-surface p-4 sm:p-6 lg:col-span-7 lg:p-7">
               <div className="flex flex-wrap items-end justify-between gap-3 border-b border-border pb-4">
                 <div>
-                  <TechnicalCode>Instrument register // 01—{String(order.items.length).padStart(2, '0')}</TechnicalCode>
-                  <h2 id="dossier-items-heading" className="mt-2 font-display text-xl text-foreground">Allocated items</h2>
+                  <TechnicalCode>Items // 01—{String(order.items.length).padStart(2, '0')}</TechnicalCode>
+                  <h2 id="dossier-items-heading" className="mt-2 font-display text-xl text-foreground">Ordered items</h2>
                 </div>
                 <span className="font-mono text-[9px] uppercase tracking-[0.1em] text-foreground-subtle">{String(orderUnitCount(order)).padStart(2, '0')} units</span>
               </div>
@@ -167,23 +161,22 @@ export function AccountOrderDetail({ orderId }: { orderId: string }) {
                 <div className="flex items-start gap-3">
                   <Truck className="mt-0.5 h-4 w-4 shrink-0 text-foreground-muted" aria-hidden="true" />
                   <div className="min-w-0">
-                    <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-foreground-subtle">Delivery register</p>
-                    <p className="mt-1.5 break-words text-small text-foreground">{order.shippingMethod?.name || (shipmentStatusRecorded ? order.carrier : null) || 'Not recorded'}</p>
+                    <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-foreground-subtle">Delivery</p>
+                    <p className="mt-1.5 break-words text-small text-foreground">{order.shippingMethod?.name || order.carrier || 'Not recorded'}</p>
                     {order.shippingMethod?.estimatedWindow && (
                       <p className="mt-1 text-small text-foreground-muted">
-                        {isPendingSettlement || hasLocalAdminStatusOverride ? 'Quoted service window // ' : 'Estimated service window // '}
-                        {order.shippingMethod.estimatedWindow}
-                        {isPendingSettlement ? ' · provisional; dispatch has not started' : hasLocalAdminStatusOverride ? ' · order status is a local preview override' : ''}
+                        Estimated window // {order.shippingMethod.estimatedWindow}
+                        {isPendingSettlement ? ' · counted from confirmation' : ''}
                       </p>
                     )}
-                    {!isPendingSettlement && !hasLocalAdminStatusOverride && order.shippingMethod?.estimatedDispatch && (
+                    {!isPendingSettlement && order.shippingMethod?.estimatedDispatch && (
                       <p className="mt-1 text-[10px] leading-relaxed text-foreground-subtle">Dispatch estimate // {order.shippingMethod.estimatedDispatch}</p>
                     )}
                   </div>
                 </div>
                 <div className="mt-4 grid grid-cols-1 gap-4 border-t border-border pt-4 sm:grid-cols-2">
                   <div className="min-w-0">
-                    <p className="font-mono text-[8px] uppercase tracking-[0.11em] text-foreground-subtle">Destination // order record</p>
+                    <p className="font-mono text-[8px] uppercase tracking-[0.11em] text-foreground-subtle">Delivery address</p>
                     <address className="mt-2 not-italic text-small leading-relaxed text-foreground-muted">
                       <span className="block">{order.shippingAddress.firstName} {order.shippingAddress.lastName}</span>
                       {order.shippingAddress.company && <span className="block">{order.shippingAddress.company}</span>}
@@ -198,15 +191,14 @@ export function AccountOrderDetail({ orderId }: { orderId: string }) {
                       <p className="mt-2 break-all font-mono text-small text-foreground">{order.trackingNumber}</p>
                     ) : (
                       <p className="mt-2 text-small text-foreground-muted">
-                        {isPendingSettlement ? 'No tracking reference recorded; dispatch has not started.' : hasLocalAdminStatusOverride ? 'Local status override; no actual dispatch or tracking is confirmed.' : 'No tracking reference recorded.'}
+                        {isPendingSettlement ? 'Available once the order is dispatched.' : 'No tracking reference yet.'}
                       </p>
                     )}
-                    {shipmentStatusRecorded && order.carrier && <p className="mt-1 break-words text-[10px] text-foreground-subtle">Carrier on record // {order.carrier}</p>}
-                    {!isPendingSettlement && !hasLocalAdminStatusOverride && order.estimatedDispatch && <p className="mt-2 text-[10px] leading-relaxed text-foreground-subtle">Dispatch estimate // {order.estimatedDispatch}</p>}
+                    {shipmentStatusRecorded && order.carrier && <p className="mt-1 break-words text-[10px] text-foreground-subtle">Carrier // {order.carrier}</p>}
+                    {!isPendingSettlement && order.estimatedDispatch && <p className="mt-2 text-[10px] leading-relaxed text-foreground-subtle">Dispatch estimate // {order.estimatedDispatch}</p>}
                     {order.estimatedDelivery && (
                       <p className="mt-1 text-[10px] leading-relaxed text-foreground-subtle">
-                        {hasLocalAdminStatusOverride ? 'Original estimate on record // not verified after local status change · ' : isPendingSettlement ? 'Provisional delivery estimate on record // ' : 'Estimated delivery on record // '}
-                        {order.estimatedDelivery}
+                        Estimated delivery // {order.estimatedDelivery}
                       </p>
                     )}
                   </div>
@@ -216,29 +208,29 @@ export function AccountOrderDetail({ orderId }: { orderId: string }) {
 
             <aside className="min-w-0 space-y-4 lg:col-span-5">
               <section aria-labelledby="financial-dossier-heading" className="border border-border bg-surface p-4 sm:p-6 lg:p-7">
-                <TechnicalCode>Financial dossier // {order.currency}</TechnicalCode>
-                <h2 id="financial-dossier-heading" className="mt-2 font-display text-xl text-foreground">Settlement record</h2>
+                <TechnicalCode>Summary // {order.currency}</TechnicalCode>
+                <h2 id="financial-dossier-heading" className="mt-2 font-display text-xl text-foreground">Payment summary</h2>
                 <dl className="mt-4 space-y-3 border-y border-border py-4">
                   <FinancialRow label="Subtotal" value={formatPrice(totals.subtotal)} />
                   {totals.discountAmount > 0 && <FinancialRow label={`Discount${order.discountCode ? ` // ${order.discountCode}` : ''}`} value={`−${formatPrice(totals.discountAmount)}`} />}
-                  <FinancialRow label="Shipping" value={totals.shippingCost === 0 ? 'COMPLIMENTARY' : formatPrice(totals.shippingCost)} />
-                  <FinancialRow label="Tax" value={totals.taxAmount === 0 ? 'PENDING' : formatPrice(totals.taxAmount)} />
+                  <FinancialRow label="Delivery" value={totals.shippingCost === 0 ? 'FREE' : formatPrice(totals.shippingCost)} />
+                  <FinancialRow label="Tax" value={totals.taxAmount === 0 ? 'INCLUDED' : formatPrice(totals.taxAmount)} />
                 </dl>
                 <div className="flex items-end justify-between gap-3 pt-4">
                   <div>
                     <p className="font-display text-base text-foreground">Total</p>
-                    <p className="mt-1 font-mono text-[8px] uppercase tracking-[0.11em] text-foreground-subtle">Settlement // {paymentStatusLabel(order.paymentStatus)}</p>
+                    <p className="mt-1 font-mono text-[8px] uppercase tracking-[0.11em] text-foreground-subtle">Payment // {paymentStatusLabel(order.paymentStatus)}</p>
                   </div>
                   <PriceDisplay price={totals.total} size="xl" />
                 </div>
                 <p className="mt-4 border-t border-border pt-3 text-[10px] leading-relaxed text-foreground-subtle">
-                  Payment-method credentials are intentionally not displayed in the atelier. The order contract retains only its existing safe summary fields.
+                  Payment method: {order.paymentMethod}. {order.paymentStatus === 'paid' ? 'Payment has been confirmed by our team.' : 'Payment is confirmed by our team on delivery or when your transfer is received.'}
                 </p>
               </section>
 
               <section aria-labelledby="timeline-heading" className="border border-border bg-surface p-4 sm:p-6 lg:p-7">
-                <TechnicalCode>Fulfillment telemetry // order status</TechnicalCode>
-                <h2 id="timeline-heading" className="mt-2 font-display text-xl text-foreground">Completed events on record</h2>
+                <TechnicalCode>Timeline</TechnicalCode>
+                <h2 id="timeline-heading" className="mt-2 font-display text-xl text-foreground">Order history</h2>
                 {completedTimeline.length > 0 ? (
                   <ol className="mt-4 space-y-0 border-s border-border ps-4">
                     {completedTimeline.map((event) => (
@@ -254,44 +246,35 @@ export function AccountOrderDetail({ orderId }: { orderId: string }) {
                     ))}
                   </ol>
                 ) : (
-                  <p className="mt-4 text-small text-foreground-muted">No completed order events are recorded. No future fulfillment steps are inferred in this preview.</p>
+                  <p className="mt-4 text-small text-foreground-muted">No events recorded yet.</p>
                 )}
               </section>
 
               <section aria-labelledby="support-heading" className="border-s border-foreground px-4 py-2 sm:px-5">
-                <TechnicalCode>Support // private client service</TechnicalCode>
+                <TechnicalCode>Support</TechnicalCode>
                 <h2 id="support-heading" className="mt-2 font-display text-xl text-foreground">Need assistance?</h2>
                 <p className="mt-2 text-small leading-relaxed text-foreground-muted">
-                  Contact routing is not connected in this account preview. No message will be sent from this action.
+                  Questions about this order? Email us and quote {order.orderNumber}; we reply within one business day.
                 </p>
-                <Button type="button" variant="editorial" size="md" className="mt-3 min-h-11" leftIcon={<Mail className="h-3.5 w-3.5" aria-hidden="true" />} onClick={() => setIsSupportOpen(true)}>
-                  Contact Private Client Service
-                </Button>
+                <a
+                  href={supportHref}
+                  className="mt-3 inline-flex min-h-11 items-center gap-2 border-b border-foreground px-1 font-mono text-[9px] uppercase tracking-[0.12em] text-foreground transition-colors hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground"
+                >
+                  <Mail className="h-3.5 w-3.5" aria-hidden="true" /> Email support
+                </a>
               </section>
             </aside>
           </div>
 
           <div className="mt-7 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-5">
-            <p className="font-mono text-[8px] uppercase tracking-[0.1em] text-foreground-subtle">Order record // {order.orderNumber}</p>
+            <p className="font-mono text-[8px] uppercase tracking-[0.1em] text-foreground-subtle">Order // {order.orderNumber}</p>
             <Link href="/account#order-archive" className="inline-flex min-h-11 items-center gap-2 border-b border-border px-1 font-mono text-[9px] uppercase tracking-[0.11em] text-foreground-muted hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground">
-              Return to order archive <ArrowUpRight className="h-3 w-3" aria-hidden="true" />
+              Back to my orders <ArrowUpRight className="h-3 w-3" aria-hidden="true" />
             </Link>
           </div>
         </Container>
       </main>
 
-      <Modal
-        isOpen={isSupportOpen}
-        onClose={() => setIsSupportOpen(false)}
-        title="Private Client Service"
-        code="SUPPORT CHANNEL // NOT CONNECTED"
-        size="sm"
-        footer={<Button type="button" variant="primary" size="md" onClick={() => setIsSupportOpen(false)}>Close</Button>}
-      >
-        <p className="text-small leading-relaxed text-foreground-muted">
-          No support message has been composed or sent. A verified service channel will be connected when customer support infrastructure is available.
-        </p>
-      </Modal>
     </>
   );
 }

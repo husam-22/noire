@@ -1,8 +1,14 @@
 /**
- * NOIRÉ — Backend-Agnostic Service Layer Entrypoint
+ * NOIRÉ — service layer entrypoint (server only).
  *
- * UI and Server Components import data operations from `@/lib/services`.
- * Currently backed by `@/lib/mock-api`; swapping to a production REST/GraphQL/tRPC
- * implementation requires changing only this barrel or the underlying adapter.
+ * All reads and writes go to Supabase. Server Components should prefer
+ * `@/lib/services/localized` (locale-aware catalog copy); Client Components
+ * must go through the server actions in `@/lib/actions/*`.
  */
-export * from '@/lib/mock-api';
+import 'server-only';
+
+export * from '@/lib/services/supabase/catalog';
+export * from '@/lib/services/supabase/journal';
+export * from '@/lib/services/supabase/content';
+export * from '@/lib/services/supabase/commerce';
+export * from '@/lib/services/supabase/search';

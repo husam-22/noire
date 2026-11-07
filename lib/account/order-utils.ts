@@ -1,8 +1,8 @@
 import type { Order, OrderStatus, OrderTotals, PaymentStatus } from '@/types';
 
 const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
-  pending_settlement: 'Pending settlement',
-  processing: 'Processing',
+  pending_settlement: 'Awaiting confirmation',
+  processing: 'Confirmed · preparing',
   'Craft & Calibration': 'Craft & calibration',
   shipped: 'Shipped',
   delivered: 'Delivered',
@@ -25,33 +25,10 @@ export function paymentStatusLabel(status: PaymentStatus): string {
   return PAYMENT_STATUS_LABELS[status];
 }
 
-/** A display of the actual order status; no courier state is inferred. */
+/** Fulfillment label derived from the order status; nothing is inferred beyond the recorded state. */
 export function fulfillmentStatusLabel(status: OrderStatus): string {
-  if (status === 'pending_settlement') return 'Not initiated';
+  if (status === 'pending_settlement') return 'Not started';
   return ORDER_STATUS_LABELS[status];
-}
-
-export function hasLocalDemoStatusOverride(order: Pick<Order, 'timeline'>): boolean {
-  return order.timeline.some((event) =>
-    event.status.startsWith('LOCAL DEMO ADMIN ACTION //')
-  );
-}
-
-export function displayedOrderStatusLabel(
-  order: Pick<Order, 'status' | 'timeline'>
-): string {
-  const statusLabel = orderStatusLabel(order.status);
-  return hasLocalDemoStatusOverride(order)
-    ? `Local demo override · ${statusLabel}`
-    : statusLabel;
-}
-
-export function displayedFulfillmentStatusLabel(
-  order: Pick<Order, 'status' | 'timeline'>
-): string {
-  return hasLocalDemoStatusOverride(order)
-    ? `Unverified local demo state · ${orderStatusLabel(order.status)}`
-    : fulfillmentStatusLabel(order.status);
 }
 
 export function orderUnitCount(order: Order): number {

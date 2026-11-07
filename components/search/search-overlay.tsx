@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { NOIRE_MOTION_TOKENS } from '@/lib/design-system/tokens';
 import { useOverlayBehavior, useDebounce } from '@/lib/hooks';
-import { searchCatalog } from '@/lib/services';
+import { searchCatalogAction } from '@/lib/actions/commerce';
 import { useCommerce } from '@/lib/context/commerce-context';
 import { Container } from '@/components/layout';
 import {
@@ -168,13 +168,17 @@ export function SearchOverlay({
     let cancelled = false;
     setIsLoading(true);
 
-    searchCatalog(trimmed, 160)
-      .then((res) => {
-        if (!cancelled) {
-          setResults(res);
+    searchCatalogAction(trimmed)
+      .then((result) => {
+        if (cancelled) return;
+        if (!result.ok) {
           setIsLoading(false);
-          setActiveIndex(res.products.length > 0 ? 0 : -1);
+          return;
         }
+        const res = result.data;
+        setResults(res);
+        setIsLoading(false);
+        setActiveIndex(res.products.length > 0 ? 0 : -1);
       })
       .catch(() => {
         if (!cancelled) setIsLoading(false);

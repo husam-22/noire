@@ -423,7 +423,15 @@ export interface Database {
         };
         Insert: never;
         Update: never;
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: 'order_items_order_id_fkey';
+            columns: ['order_id'];
+            isOneToOne: false;
+            referencedRelation: 'orders';
+            referencedColumns: ['id'];
+          }
+        ];
       };
       order_events: {
         Row: {
@@ -442,7 +450,15 @@ export interface Database {
           description: string;
         };
         Update: never;
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: 'order_events_order_id_fkey';
+            columns: ['order_id'];
+            isOneToOne: false;
+            referencedRelation: 'orders';
+            referencedColumns: ['id'];
+          }
+        ];
       };
       discount_redemptions: {
         Row: {
@@ -529,6 +545,14 @@ export interface Database {
         Row: Database['public']['Tables']['collections']['Row'] & { product_ids: string[] };
         Relationships: [];
       };
+      admin_customers: {
+        Row: Database['public']['Tables']['profiles']['Row'] & {
+          orders_count: number;
+          total_spent: number;
+          last_order_at: Timestamp | null;
+        };
+        Relationships: [];
+      };
     };
     Functions: {
       validate_discount: { Args: { p_code: string; p_subtotal: number }; Returns: Json };
@@ -546,6 +570,9 @@ export interface Database {
       };
       mark_order_paid: { Args: { p_order_id: string; p_provider_ref: string }; Returns: undefined };
       admin_dashboard_stats: { Args: { p_days?: number }; Returns: Json };
+      get_order_receipt: { Args: { p_order_id: string }; Returns: Json };
+      confirm_order_payment: { Args: { p_order_id: string; p_reference?: string | null }; Returns: undefined };
+      get_storefront_content: { Args: Record<string, never>; Returns: Json };
       jwt_role: { Args: Record<string, never>; Returns: Database['public']['Enums']['app_role'] };
       is_admin: { Args: Record<string, never>; Returns: boolean };
       is_staff: { Args: Record<string, never>; Returns: boolean };
@@ -572,8 +599,8 @@ export interface Database {
         | 'cancelled'
         | 'returned';
       payment_status: 'pending' | 'paid' | 'refunded' | 'failed';
-      payment_provider: 'demo' | 'stripe_elements' | 'apple_pay' | 'studio_wire';
-      payment_method_type: 'card' | 'apple_pay' | 'wire_transfer';
+      payment_provider: 'demo' | 'stripe_elements' | 'apple_pay' | 'studio_wire' | 'manual';
+      payment_method_type: 'card' | 'apple_pay' | 'wire_transfer' | 'cash_on_delivery' | 'bank_transfer';
       discount_type: 'percentage' | 'fixed_amount' | 'free_shipping';
       discount_status: 'active' | 'scheduled' | 'expired' | 'disabled' | 'archived';
       customer_status: 'active' | 'vip' | 'inactive';

@@ -2,26 +2,20 @@ import React from 'react';
 import { Compass, ArrowUpRight } from 'lucide-react';
 import { getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
-import { getCatalogLocalizer } from '@/lib/i18n/catalog';
-import { MOCK_CATEGORIES, MOCK_COLLECTIONS, MOCK_PRODUCTS } from '@/lib/data';
+import { getCategories, getCollections, getFeaturedProducts, getSpotlightProduct } from '@/lib/services/localized';
 import { Container, Section } from '@/components/layout';
 import { EmptyState, Eyebrow } from '@/components/ui';
 import { GlobalHeader, GlobalFooter } from '@/components/navigation';
 import { ProductCard, QuickViewModal } from '@/components/product';
 
 export default async function LocaleNotFound() {
-  const [t, localize] = await Promise.all([
+  const [t, categories, collections, featuredProducts, spotlightProduct] = await Promise.all([
     getTranslations('notFound'),
-    getCatalogLocalizer(),
+    getCategories().catch(() => []),
+    getCollections().catch(() => []),
+    getFeaturedProducts(3).catch(() => []),
+    getSpotlightProduct().catch(() => null),
   ]);
-  const categories = localize.categories(MOCK_CATEGORIES);
-  const collections = localize.collections(MOCK_COLLECTIONS);
-  const featuredProducts = localize.products(
-    MOCK_PRODUCTS.filter((p) => p.featured && p.status === 'active').slice(0, 3)
-  );
-  const spotlightProduct = localize.product(
-    MOCK_PRODUCTS.find((p) => p.isSpotlight) ?? MOCK_PRODUCTS[0]
-  );
 
   return (
     <div className="min-h-screen bg-background text-foreground">
