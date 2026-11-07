@@ -693,6 +693,7 @@ export function CheckoutExperience({
       active = false;
     };
   }, [
+    t,
     shippingAddress.country,
     cartSubtotal,
     appliedDiscount?.type,
@@ -975,6 +976,7 @@ export function CheckoutExperience({
       return null;
     }
   }, [
+    t,
     cart,
     cartSubtotal,
     discountAmount,
