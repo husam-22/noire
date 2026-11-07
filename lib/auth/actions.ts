@@ -37,6 +37,8 @@ export async function requestMagicLink(_prev: SignInState, formData: FormData): 
   });
 
   if (error) {
+    // Surface the real cause in server logs (Vercel → Logs); the UI only shows a generic message.
+    console.error('[auth] signInWithOtp failed', { status: error.status, code: error.code, message: error.message });
     return { status: 'error', message: 'send_failed' };
   }
   return { status: 'sent' };
