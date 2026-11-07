@@ -75,7 +75,8 @@ Quick start:
 cp .env.example .env.local        # fill NEXT_PUBLIC_SUPABASE_* + SUPABASE_SERVICE_ROLE_KEY
 supabase link --project-ref <ref> # once
 npm run db:push                   # apply supabase/migrations/*.sql
-npm run db:seed                   # load fixtures + Arabic catalog translations
+npm run db:seed                   # load fixtures + Arabic catalog translations (service role)
+#   …or without a service-role key: npm run db:seed:sql → paste supabase/seed.sql in the SQL Editor
 NOIRE_DATA_SOURCE=supabase npm run dev
 ```
 
@@ -84,6 +85,7 @@ NOIRE_DATA_SOURCE=supabase npm run dev
 | `npm run db:push`  | Apply migrations to the linked project                    |
 | `npm run db:reset` | Recreate the local database (`supabase start`) from migrations |
 | `npm run db:seed`  | Upsert fixtures into Supabase (idempotent)                |
+| `npm run db:seed:sql` | Emit the same seed as idempotent SQL → `supabase/seed.sql` (no service-role key needed) |
 | `npm run db:types` | Regenerate `types/supabase.ts` from the live schema       |
 
 - `NOIRE_DATA_SOURCE=mock` (default) keeps the app on in-memory fixtures; `supabase` switches catalog reads to Postgres via `lib/services/supabase/`.
