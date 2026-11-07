@@ -1,9 +1,11 @@
+import { useTranslations } from 'next-intl';
 import { Container } from '@/components/layout';
 import { Skeleton } from '@/components/ui';
 
 export function AccountContentSkeleton() {
+  const t = useTranslations('account');
   return (
-    <div role="status" aria-label="Loading private client dossier" aria-busy="true" className="space-y-7">
+    <div role="status" aria-label={t('loading')} aria-busy="true" className="space-y-7">
       <div className="flex items-end justify-between border-b border-border pb-4">
         <div className="space-y-3">
           <Skeleton className="h-3 w-36" />

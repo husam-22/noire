@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { MapPin, PencilLine, Plus, Trash2 } from 'lucide-react';
 import type { Address } from '@/types';
 import type { CustomerAddressInput, CustomerProfileRecord } from '@/lib/account/contracts';
@@ -11,9 +12,9 @@ import { useToast } from '@/components/ui/toast';
 
 type AddressDraft = Required<Omit<CustomerAddressInput, 'id'>> & { id?: string };
 
-function emptyDraft(profile: CustomerProfileRecord): AddressDraft {
+function emptyDraft(profile: CustomerProfileRecord, label: string): AddressDraft {
   return {
-    label: 'Home',
+    label,
     firstName: profile.firstName ?? '',
     lastName: profile.lastName ?? '',
     company: '',
@@ -55,16 +56,17 @@ export function AccountAddresses({
   addresses: Address[];
   profile: CustomerProfileRecord;
 }) {
+  const t = useTranslations('account.addresses');
   const router = useRouter();
   const { addToast } = useToast();
   const [isEditorOpen, setIsEditorOpen] = useState(false);
-  const [draft, setDraft] = useState<AddressDraft>(() => emptyDraft(profile));
+  const [draft, setDraft] = useState<AddressDraft>(() => emptyDraft(profile, t('defaultLabel')));
   const [error, setError] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const openCreate = () => {
-    setDraft({ ...emptyDraft(profile), isDefaultShipping: addresses.length === 0, isDefaultBilling: addresses.length === 0 });
+    setDraft({ ...emptyDraft(profile, t('defaultLabel')), isDefaultShipping: addresses.length === 0, isDefaultBilling: addresses.length === 0 });
     setError('');
     setIsEditorOpen(true);
   };
@@ -81,7 +83,7 @@ export function AccountAddresses({
     setError('');
     const payload: CustomerAddressInput = {
       ...draft,
-      label: draft.label.trim() || 'Address',
+      label: draft.label.trim() || t('fallbackLabel'),
       firstName: draft.firstName.trim(),
       lastName: draft.lastName.trim(),
       company: draft.company.trim() || undefined,
@@ -102,22 +104,22 @@ export function AccountAddresses({
     setIsEditorOpen(false);
     addToast({
       type: 'success',
-      title: draft.id ? 'Address updated' : 'Address saved',
-      description: 'Your address book has been updated.',
+      title: draft.id ? t('toastUpdated') : t('toastSaved'),
+      description: t('toastBody'),
     });
     router.refresh();
   };
 
   const handleDelete = async (address: Address) => {
-    if (!window.confirm(`Remove the address "${address.label}"?`)) return;
+    if (!window.confirm(t('confirmRemove', { label: address.label }))) return;
     setDeletingId(address.id);
     const result = await deleteAddressAction(address.id);
     setDeletingId(null);
     if (!result.ok) {
-      addToast({ type: 'error', title: 'Could not remove address', description: result.error });
+      addToast({ type: 'error', title: t('toastRemoveFailed'), description: result.error });
       return;
     }
-    addToast({ type: 'info', title: 'Address removed' });
+    addToast({ type: 'info', title: t('toastRemoved') });
     router.refresh();
   };
 
@@ -125,16 +127,16 @@ export function AccountAddresses({
     <section id="delivery-register" aria-labelledby="delivery-register-heading" className="scroll-mt-28 space-y-5 sm:space-y-7">
       <div className="flex flex-wrap items-end justify-between gap-3 border-b border-border pb-4">
         <div>
-          <TechnicalCode>Address book // 04</TechnicalCode>
+          <TechnicalCode>{t('code')}</TechnicalCode>
           <h2 id="delivery-register-heading" className="mt-2 font-display text-2xl text-foreground sm:text-3xl">
-            Delivery Addresses
+            {t('title')}
           </h2>
           <p className="mt-2 max-w-2xl text-small leading-relaxed text-foreground-muted">
-            Saved addresses are kept on your account and offered at checkout. Your default address is pre-selected.
+            {t('intro')}
           </p>
         </div>
         <Button type="button" variant="outline" size="md" leftIcon={<Plus className="h-3.5 w-3.5" aria-hidden="true" />} onClick={openCreate}>
-          Add address
+          {t('add')}
         </Button>
       </div>
 
@@ -165,14 +167,14 @@ export function AccountAddresses({
               </address>
               <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-border pt-3">
                 {address.isDefaultShipping && (
-                  <span className="border border-accent/40 px-2 py-1 font-mono text-[8px] uppercase tracking-[0.1em] text-accent">Default shipping</span>
+                  <span className="border border-accent/40 px-2 py-1 font-mono text-[8px] uppercase tracking-[0.1em] text-accent">{t('defaultShipping')}</span>
                 )}
                 {address.isDefaultBilling && (
-                  <span className="border border-border px-2 py-1 font-mono text-[8px] uppercase tracking-[0.1em] text-foreground-muted">Default billing</span>
+                  <span className="border border-border px-2 py-1 font-mono text-[8px] uppercase tracking-[0.1em] text-foreground-muted">{t('defaultBilling')}</span>
                 )}
                 <span className="ms-auto flex items-center gap-1">
                   <Button type="button" variant="ghost" size="sm" leftIcon={<PencilLine className="h-3 w-3" aria-hidden="true" />} onClick={() => openEdit(address)}>
-                    Edit
+                    {t('edit')}
                   </Button>
                   <Button
                     type="button"
@@ -182,7 +184,7 @@ export function AccountAddresses({
                     leftIcon={<Trash2 className="h-3 w-3" aria-hidden="true" />}
                     onClick={() => handleDelete(address)}
                   >
-                    Remove
+                    {t('remove')}
                   </Button>
                 </span>
               </div>
@@ -191,11 +193,11 @@ export function AccountAddresses({
         </ul>
       ) : (
         <EmptyState
-          code="ADDRESS BOOK // EMPTY"
-          title="No saved addresses."
-          description="Add a delivery address to speed up checkout. You can keep several and choose a default."
+          code={t('emptyCode')}
+          title={t('emptyTitle')}
+          description={t('emptyDescription')}
           icon={<MapPin className="h-5 w-5" aria-hidden="true" />}
-          primaryAction={<Button type="button" variant="secondary" size="md" onClick={openCreate}>Add address</Button>}
+          primaryAction={<Button type="button" variant="secondary" size="md" onClick={openCreate}>{t('add')}</Button>}
           className="p-5 sm:p-8"
         />
       )}
@@ -203,14 +205,14 @@ export function AccountAddresses({
       <Modal
         isOpen={isEditorOpen}
         onClose={() => setIsEditorOpen(false)}
-        title={draft.id ? 'Edit address' : 'Add address'}
-        code="ADDRESS BOOK"
+        title={draft.id ? t('editTitle') : t('addTitle')}
+        code={t('modalCode')}
         size="lg"
         footer={
           <>
-            <Button type="button" variant="secondary" size="md" onClick={() => setIsEditorOpen(false)}>Cancel</Button>
+            <Button type="button" variant="secondary" size="md" onClick={() => setIsEditorOpen(false)}>{t('cancel')}</Button>
             <Button type="submit" form="account-address-form" variant="primary" size="md" isLoading={isSaving}>
-              Save address
+              {t('save')}
             </Button>
           </>
         }
@@ -222,29 +224,29 @@ export function AccountAddresses({
             </p>
           )}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Input label="Label (Home, Studio…)" value={draft.label} onChange={(event) => setDraft((current) => ({ ...current, label: event.target.value }))} />
-            <Input label="Phone" type="tel" autoComplete="tel" value={draft.phone} onChange={(event) => setDraft((current) => ({ ...current, phone: event.target.value }))} />
-            <Input label="First name" autoComplete="given-name" value={draft.firstName} onChange={(event) => setDraft((current) => ({ ...current, firstName: event.target.value }))} />
-            <Input label="Last name" autoComplete="family-name" value={draft.lastName} onChange={(event) => setDraft((current) => ({ ...current, lastName: event.target.value }))} />
-            <Input label="Company (optional)" autoComplete="organization" value={draft.company} onChange={(event) => setDraft((current) => ({ ...current, company: event.target.value }))} />
-            <Input label="Country / region" autoComplete="country-name" value={draft.country} onChange={(event) => setDraft((current) => ({ ...current, country: event.target.value }))} />
-            <Input label="Street address" autoComplete="address-line1" value={draft.line1} onChange={(event) => setDraft((current) => ({ ...current, line1: event.target.value }))} />
-            <Input label="Address line 2 (optional)" autoComplete="address-line2" value={draft.line2} onChange={(event) => setDraft((current) => ({ ...current, line2: event.target.value }))} />
-            <Input label="City" autoComplete="address-level2" value={draft.city} onChange={(event) => setDraft((current) => ({ ...current, city: event.target.value }))} />
-            <Input label="State / province / region" autoComplete="address-level1" value={draft.state} onChange={(event) => setDraft((current) => ({ ...current, state: event.target.value }))} />
-            <Input label="Postal code" autoComplete="postal-code" value={draft.postalCode} onChange={(event) => setDraft((current) => ({ ...current, postalCode: event.target.value }))} />
+            <Input label={t('fields.label')} value={draft.label} onChange={(event) => setDraft((current) => ({ ...current, label: event.target.value }))} />
+            <Input label={t('fields.phone')} type="tel" autoComplete="tel" value={draft.phone} onChange={(event) => setDraft((current) => ({ ...current, phone: event.target.value }))} />
+            <Input label={t('fields.firstName')} autoComplete="given-name" value={draft.firstName} onChange={(event) => setDraft((current) => ({ ...current, firstName: event.target.value }))} />
+            <Input label={t('fields.lastName')} autoComplete="family-name" value={draft.lastName} onChange={(event) => setDraft((current) => ({ ...current, lastName: event.target.value }))} />
+            <Input label={t('fields.company')} autoComplete="organization" value={draft.company} onChange={(event) => setDraft((current) => ({ ...current, company: event.target.value }))} />
+            <Input label={t('fields.country')} autoComplete="country-name" value={draft.country} onChange={(event) => setDraft((current) => ({ ...current, country: event.target.value }))} />
+            <Input label={t('fields.line1')} autoComplete="address-line1" value={draft.line1} onChange={(event) => setDraft((current) => ({ ...current, line1: event.target.value }))} />
+            <Input label={t('fields.line2')} autoComplete="address-line2" value={draft.line2} onChange={(event) => setDraft((current) => ({ ...current, line2: event.target.value }))} />
+            <Input label={t('fields.city')} autoComplete="address-level2" value={draft.city} onChange={(event) => setDraft((current) => ({ ...current, city: event.target.value }))} />
+            <Input label={t('fields.state')} autoComplete="address-level1" value={draft.state} onChange={(event) => setDraft((current) => ({ ...current, state: event.target.value }))} />
+            <Input label={t('fields.postalCode')} autoComplete="postal-code" value={draft.postalCode} onChange={(event) => setDraft((current) => ({ ...current, postalCode: event.target.value }))} />
           </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Checkbox
               checked={draft.isDefaultShipping}
               onChange={(checked) => setDraft((current) => ({ ...current, isDefaultShipping: checked }))}
-              label="Default shipping address"
+              label={t('fields.defaultShipping')}
               className="min-h-11 border border-border p-3"
             />
             <Checkbox
               checked={draft.isDefaultBilling}
               onChange={(checked) => setDraft((current) => ({ ...current, isDefaultBilling: checked }))}
-              label="Default billing address"
+              label={t('fields.defaultBilling')}
               className="min-h-11 border border-border p-3"
             />
           </div>

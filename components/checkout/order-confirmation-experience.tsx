@@ -4,7 +4,7 @@ import React from 'react';
 import Image from 'next/image';
 import { Link } from '@/i18n/navigation';
 import { useLocale, useTranslations } from 'next-intl';
-import { orderStatusLabel, paymentMethodTypeLabel, paymentStatusLabel } from '@/lib/i18n/order-labels';
+import { orderStatusLabel, paymentMethodTypeLabel, paymentStatusLabel } from '@/lib/account/order-utils';
 import { ArrowDown, ArrowRight, ArrowUpRight, CircleCheck, FileText, ShieldAlert, Truck } from 'lucide-react';
 import type { Order } from '@/types';
 import { Button, EmptyState, PriceDisplay, TechnicalCode } from '@/components/ui';
