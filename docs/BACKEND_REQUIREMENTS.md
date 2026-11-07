@@ -27,6 +27,8 @@
 | `supabase/migrations/20261107000100_commerce_functions.sql` | دوال RPC: `place_order`, `validate_discount`, `quote_shipping`, `set_order_status`, `mark_order_paid`, `admin_dashboard_stats` |
 | `supabase/config.toml` | إعدادات Supabase CLI للتطوير المحلي (المنافذ، Auth redirects، Storage bucket) |
 | `scripts/seed-supabase.ts` | تحميل بيانات الكتالوج الحالية + الترجمات العربية إلى قاعدة البيانات (`npm run db:seed`) |
+| `scripts/seed-rows.ts` | مُنشئ الصفوف المشترك بين `db:seed` و`db:seed:sql` (ترتيب آمن للمفاتيح الأجنبية) |
+| `scripts/seed-sql.ts` + `supabase/seed.sql` | نفس بيانات التعبئة كـ SQL متكرّر الاستخدام (upsert) يُلصق في SQL Editor أو يُنفَّذ عبر CLI — لا يحتاج service_role (`npm run db:seed:sql`) |
 | `types/supabase.ts` | أنواع TypeScript للمخطط (مكتوبة يدوياً — تُستبدل بـ `npm run db:types` بعد الربط) |
 | `lib/env.ts` | قراءة آمنة لمتغيرات البيئة + اختيار مصدر البيانات |
 | `lib/supabase/client.ts` | عميل المتصفح (anon key) |
@@ -86,8 +88,11 @@ npm run db:push              # يطبّق ملفات supabase/migrations/*.sql
 
 ### 2.5 تعبئة البيانات
 ```bash
-npm run db:seed
+npm run db:seed          # يحتاج SUPABASE_SERVICE_ROLE_KEY
+# أو بدون مفتاح service_role:
+npm run db:seed:sql      # يولّد supabase/seed.sql → الصقه في Dashboard → SQL Editor (أو: supabase db query -f supabase/seed.sql)
 ```
+> **تنبيه:** في وضع `NOIRE_DATA_SOURCE=supabase` يُظهر الموقع خطأ 500 إذا كان الكتالوج فارغاً — نفّذ التعبئة مباشرة بعد الهجرات.
 يرفع: 12 منتجاً، 6 فئات، 4 مجموعات، المقالات، طرق الشحن، أكواد الخصم التجريبية، الترجمات العربية للفئات والمجموعات، والإعدادات الافتراضية.
 
 ### 2.6 أول مدير

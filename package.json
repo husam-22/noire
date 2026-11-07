@@ -15,7 +15,8 @@
     "db:types": "supabase gen types typescript --project-id \"$SUPABASE_PROJECT_REF\" --schema public > types/supabase.ts",
     "db:push": "supabase db push",
     "db:reset": "supabase db reset",
-    "db:seed": "tsx scripts/seed-supabase.ts"
+    "db:seed": "tsx scripts/seed-supabase.ts",
+    "db:seed:sql": "tsx scripts/seed-sql.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
