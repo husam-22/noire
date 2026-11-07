@@ -1,20 +1,18 @@
 import type { Metadata } from 'next';
+import { getTranslations } from 'next-intl/server';
 import { redirect } from '@/i18n/navigation';
 import { getAuthContext } from '@/lib/supabase/auth';
 import { AdminShell } from '@/components/admin';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata: Metadata = {
-  title: {
-    default: 'Command Center',
-    template: '%s // Command Center',
-  },
-  robots: {
-    index: false,
-    follow: false,
-  },
-};
+export async function generateMetadata({ params }: { params: { locale: string } }): Promise<Metadata> {
+  const t = await getTranslations({ locale: params.locale, namespace: 'admin.meta' });
+  return {
+    title: { default: t('title'), template: t('template') },
+    robots: { index: false, follow: false },
+  };
+}
 
 export default async function AdminLayout({ children, params }: { children: React.ReactNode; params: { locale: string } }) {
   // Middleware already enforces staff access; this is defence in depth and provides the user to the shell.

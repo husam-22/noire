@@ -155,7 +155,7 @@ export function AdminProductsWorkspace({ products: initialProducts, categories }
 type Translator = ReturnType<typeof useTranslations>;
 interface ProductItemProps { product: Product; onStatusChange: (product: Product) => void; t: Translator; tInv: Translator; locale: string }
 
-function ProductTableRow({ product, onStatusChange, t, tInv, locale }: ProductItemProps) {
+function ProductTableRow({ product, onStatusChange, t, locale }: ProductItemProps) {
   return (
     <tr className="border-b border-border last:border-0 hover:bg-surface-muted/30">
       <th scope="row" className="px-3 py-3.5"><div className="flex min-w-[220px] items-center gap-3"><span className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden border border-border bg-surface-muted">{product.primaryImage ? <Image src={product.primaryImage} alt="" fill sizes="48px" className="object-cover" /> : <span className="font-mono text-[6px] uppercase text-foreground-subtle">{t('noImage')}</span>}</span><span className="min-w-0"><Link href={`/admin/products/${encodeURIComponent(product.id)}`} className="block break-words text-[11px] font-medium text-foreground underline decoration-border underline-offset-4 hover:decoration-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground">{product.name}</Link><span className="mt-1 block font-mono text-[8px] text-foreground-subtle">{product.modelNumber}</span></span></div></th>
