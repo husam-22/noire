@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { getTranslations } from 'next-intl/server';
 
 import { redirect } from '@/i18n/navigation';
 import {
@@ -17,15 +18,14 @@ import { AccountExperience } from '@/components/account';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata: Metadata = {
-  title: 'My Account | NOIRÉ',
-  description:
-    'Your NOIRÉ orders, saved instruments, delivery addresses, and preferences.',
-  robots: {
-    index: false,
-    follow: false,
-  },
-};
+export async function generateMetadata({ params }: { params: { locale: string } }): Promise<Metadata> {
+  const t = await getTranslations({ locale: params.locale, namespace: 'pages.account' });
+  return {
+    title: t('title'),
+    description: t('description'),
+    robots: { index: false, follow: false },
+  };
+}
 
 export default async function NoireAccountPage({ params }: { params: { locale: string } }) {
   const resolved = await customerSessionProvider.getSession();

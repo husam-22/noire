@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { getTranslations } from 'next-intl/server';
 
 import { redirect } from '@/i18n/navigation';
 import {
@@ -16,14 +17,14 @@ import { AccountOrderDetail } from '@/components/account';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata: Metadata = {
-  title: 'Order Details | NOIRÉ',
-  description: 'Review the items, delivery, and payment status of your NOIRÉ order.',
-  robots: {
-    index: false,
-    follow: false,
-  },
-};
+export async function generateMetadata({ params }: { params: { locale: string } }): Promise<Metadata> {
+  const t = await getTranslations({ locale: params.locale, namespace: 'pages.accountOrder' });
+  return {
+    title: t('title'),
+    description: t('description'),
+    robots: { index: false, follow: false },
+  };
+}
 
 interface AccountOrderPageProps {
   params: { orderId: string; locale: string };

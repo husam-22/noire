@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { getTranslations } from 'next-intl/server';
 import {
   getCanonicalCatalog,
   getCategories,
@@ -9,15 +10,14 @@ import {
 import { GlobalFooter, GlobalHeader } from '@/components/navigation';
 import { WishlistExperience } from '@/components/wishlist/wishlist-experience';
 
-export const metadata: Metadata = {
-  title: 'Saved Archive — Private Instrument Ledger',
-  description:
-    'A private ledger of saved NOIRÉ instruments, exact finishes, and active allocations.',
-  robots: {
-    index: false,
-    follow: false,
-  },
-};
+export async function generateMetadata({ params }: { params: { locale: string } }): Promise<Metadata> {
+  const t = await getTranslations({ locale: params.locale, namespace: 'pages.wishlist' });
+  return {
+    title: t('title'),
+    description: t('description'),
+    robots: { index: false, follow: false },
+  };
+}
 
 export default async function NoireWishlistPage() {
   const [categories, collections, featuredProducts, spotlightProduct, catalog] =

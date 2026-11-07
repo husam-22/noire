@@ -114,11 +114,11 @@ export function ShopProductGrid({
   if (errorMessage) {
     return (
       <ErrorState
-        code="ERR // ARCHIVE-SYNC-503"
+        code={t('errorCode')}
         title={t('errorTitle')}
         description={errorMessage}
         onRetry={onRetry}
-        retryLabel="Retry Archive Sync"
+        retryLabel={t('errorRetry')}
         secondaryAction={
           <Button variant="outline" size="sm" onClick={onResetFilters}>
             {t('resetParameters')}

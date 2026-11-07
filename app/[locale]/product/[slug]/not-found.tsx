@@ -1,4 +1,5 @@
 import React from 'react';
+import { getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import { Compass, ArrowUpRight } from 'lucide-react';
 import { getCategories, getCollections, getFeaturedProducts, getSpotlightProduct } from '@/lib/services/localized';
@@ -8,7 +9,8 @@ import { GlobalHeader, GlobalFooter } from '@/components/navigation';
 import { ProductCard, QuickViewModal } from '@/components/product';
 
 export default async function ProductNotFound() {
-  const [categories, collections, featuredProducts, spotlightProduct] = await Promise.all([
+  const [t, categories, collections, featuredProducts, spotlightProduct] = await Promise.all([
+    getTranslations('productNotFound'),
     getCategories().catch(() => []),
     getCollections().catch(() => []),
     getFeaturedProducts(3).catch(() => []),
@@ -29,16 +31,16 @@ export default async function ProductNotFound() {
         <Section spacing="md" borderBottom>
           <Container size="wide">
             <EmptyState
-              code="ERR // 404 — SERIAL NUMBER UNRECOGNIZED"
-              title="Requested Instrument Dossier Not Found"
-              description="The product you are looking for is not in the current catalog. It may have been retired or the link may be mistyped."
+              code={t('code')}
+              title={t('title')}
+              description={t('description')}
               icon={<Compass className="h-5 w-5" />}
               primaryAction={
                 <Link
                   href="/shop"
                   className="inline-flex h-11 items-center gap-2 border border-foreground bg-foreground px-6 font-mono text-xs uppercase tracking-[0.14em] text-background transition-opacity hover:opacity-90"
                 >
-                  <span>Enter Complete Archive</span>
+                  <span>{t('primaryAction')}</span>
                   <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
                 </Link>
               }
@@ -47,7 +49,7 @@ export default async function ProductNotFound() {
                   href="/"
                   className="inline-flex h-11 items-center border border-border bg-surface px-6 font-mono text-xs uppercase tracking-[0.14em] text-foreground transition-colors hover:border-foreground"
                 >
-                  Return to Flagship Home
+                  {t('secondaryAction')}
                 </Link>
               }
             />
@@ -59,10 +61,10 @@ export default async function ProductNotFound() {
           <Container size="wide">
             <div className="mb-8 space-y-2">
               <Eyebrow index="01" tone="accent">
-                ACTIVE ALLOCATIONS
+                {t('featuredEyebrow')}
               </Eyebrow>
               <h2 className="font-display text-h2 tracking-tight text-foreground">
-                Featured Serialized Instruments
+                {t('featuredTitle')}
               </h2>
             </div>
 
@@ -71,7 +73,7 @@ export default async function ProductNotFound() {
                 <ProductCard
                   key={product.id}
                   product={product}
-                  indexLabel={`0${idx + 1} // FEATURED`}
+                  indexLabel={t('featuredIndex', { index: idx + 1 })}
                 />
               ))}
             </div>

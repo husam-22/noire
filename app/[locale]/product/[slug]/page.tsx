@@ -1,7 +1,7 @@
 import React from 'react';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { setRequestLocale } from 'next-intl/server';
+import { getTranslations, setRequestLocale } from 'next-intl/server';
 import {
   getProductBySlug,
   getRelatedProducts,
@@ -42,9 +42,10 @@ export async function generateMetadata({
   const product = await getProductBySlug(params.slug);
 
   if (!product) {
+    const t = await getTranslations({ locale: params.locale, namespace: 'pages.productNotFound' });
     return {
-      title: 'Instrument Not Found | NOIRÉ Archive',
-      description: 'The requested instrument dossier could not be located.',
+      title: t('title'),
+      description: t('description'),
     };
   }
 
@@ -54,13 +55,13 @@ export async function generateMetadata({
     : `/product/${product.slug}`;
 
   return {
-    title: product.seoTitle?.trim() || `${product.name} (${product.modelNumber}) | NOIRÉ`,
+    title: product.seoTitle?.trim() || `${product.name} (${product.modelNumber})`,
     description: seoDescription,
     alternates: {
       canonical: canonicalPath,
     },
     openGraph: {
-      title: product.seoTitle?.trim() || `${product.name} — ${product.subtitle} | NOIRÉ`,
+      title: product.seoTitle?.trim() || `${product.name} — ${product.subtitle}`,
       description: seoDescription,
       images: [
         {

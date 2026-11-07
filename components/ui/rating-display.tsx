@@ -1,5 +1,6 @@
 import React from 'react';
 import { Star } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 
 export interface RatingDisplayProps {
@@ -15,10 +16,11 @@ export function RatingDisplay({
   showStars = true,
   className,
 }: RatingDisplayProps) {
+  const t = useTranslations('common');
   return (
     <div
       className={cn('inline-flex items-center gap-2', className)}
-      aria-label={`Rated ${rating.toFixed(1)} out of 5`}
+      aria-label={t('rated', { rating: rating.toFixed(1) })}
     >
       {showStars ? (
         <div className="flex items-center gap-0.5">

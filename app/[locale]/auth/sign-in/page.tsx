@@ -13,7 +13,7 @@ export const dynamic = 'force-dynamic';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('auth');
-  return { title: `${t('title')} | NOIRÉ`, robots: { index: false, follow: false } };
+  return { title: t('title'), robots: { index: false, follow: false } };
 }
 
 export default async function SignInPage({

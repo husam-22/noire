@@ -8,6 +8,7 @@ import React, {
   useRef,
 } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useRouter, usePathname } from '@/i18n/navigation';
 import { Container } from '@/components/layout';
 import { useDebounce } from '@/lib/hooks/use-debounce';
@@ -188,6 +189,7 @@ export function ShopExperience({
   const [isDesktopSidebarOpen, setIsDesktopSidebarOpen] = useState(true);
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
   const [isTransitionLoading, setIsTransitionLoading] = useState(false);
+  const t = useTranslations('shop');
   const [serviceError, setServiceError] = useState<string | null>(null);
 
   const catalogTopRef = useRef<HTMLDivElement>(null);
@@ -198,20 +200,9 @@ export function ShopExperience({
   useEffect(() => {
     const params = new URLSearchParams(searchParamsString);
 
-    // Optional diagnostic state query support (?state=error or ?state=empty)
-    const stateParam = params.get('state');
-    if (stateParam === 'error') {
-      setServiceError(
-        'Telemetry stream interrupted while querying the Zurich archive node.'
-      );
-    } else if (stateParam === 'empty-catalog') {
-      setCatalogProducts([]);
-      setServiceError(null);
-    } else {
-      setServiceError(null);
-      if (catalogProducts.length === 0 && initialProducts.length > 0) {
-        setCatalogProducts(initialProducts);
-      }
+    setServiceError(null);
+    if (catalogProducts.length === 0 && initialProducts.length > 0) {
+      setCatalogProducts(initialProducts);
     }
 
     if (lastCommittedQueryRef.current === searchParamsString) {
@@ -281,13 +272,11 @@ export function ShopExperience({
       const qs = buildQueryStringFromFilters(filters);
       router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
     } catch {
-      setServiceError(
-        'Unable to reach the NOIRÉ catalog service. Please check your connection and retry.'
-      );
+      setServiceError(t('serviceError'));
     } finally {
       setIsTransitionLoading(false);
     }
-  }, [filters, pathname, router]);
+  }, [filters, pathname, router, t]);
 
   // Compute all matching & sorted products
   const allMatchingProducts = useMemo(() => {

@@ -239,7 +239,7 @@ export function GlobalFooter({ categories, collections }: GlobalFooterProps) {
             <div className="py-10 sm:pe-6 lg:col-span-3 lg:px-8 lg:py-12">
               <div className="mb-5 flex items-center justify-between">
                 <span className="font-mono text-label uppercase text-accent">
-                  {'03 // SUPPORT'}
+                  {t('supportIndex')}
                 </span>
                 <TechnicalCode>{t('care')}</TechnicalCode>
               </div>
@@ -268,7 +268,7 @@ export function GlobalFooter({ categories, collections }: GlobalFooterProps) {
             <div className="py-10 sm:ps-6 lg:col-span-3 lg:py-12 lg:ps-8">
               <div className="mb-5 flex items-center justify-between">
                 <span className="font-mono text-label uppercase text-accent">
-                  {'04 // COMPANY'}
+                  {t('companyIndex')}
                 </span>
                 <TechnicalCode>{t('house')}</TechnicalCode>
               </div>

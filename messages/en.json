@@ -109,7 +109,9 @@
     "subscribeFailed": "We couldn't save your subscription. Please try again.",
     "privacyNote": "Used only for the newsletter · unsubscribe any time",
     "subscribed": "Subscribed",
-    "subscribe": "Subscribe"
+    "subscribe": "Subscribe",
+    "supportIndex": "03 // SUPPORT",
+    "companyIndex": "04 // COMPANY"
   },
   "catalog": {},
   "home": {
@@ -193,7 +195,7 @@
         "massValue": "14.2 kg Solid Core"
       },
       "allocateFlagship": "Allocate Flagship Object",
-      "quickInspect": "Quick Inspect",
+      "quickInspect": "Quick view {name}",
       "fullSpecifications": "Full Specifications",
       "cohesion": "ARCHITECTURAL COHESION",
       "objectsInSeries": "{count} OBJECTS IN SERIES",
@@ -313,8 +315,9 @@
       "published": "PUBLISHED {date}",
       "minRead": "{minutes} MIN READ",
       "readFull": "Read Full Monograph",
-      "read": "Read",
-      "byAuthor": "By {name} — {role}"
+      "read": "Read {title}",
+      "byAuthor": "By {name} — {role}",
+      "readLead": "Read article: {title}"
     },
     "newsletter": {
       "eyebrow": "NEWSLETTER // PRIVATE DISPATCH",
@@ -369,7 +372,9 @@
       "title": "Unable to Synchronize Catalog Telemetry",
       "description": "The request could not be completed due to a temporary connection interruption. Please retry or return to the primary archive.",
       "retry": "Retry Connection"
-    }
+    },
+    "rated": "Rated {rating} out of 5",
+    "tabs": "Content sections"
   },
   "product": {
     "badges": {
@@ -498,7 +503,9 @@
       "serialArchive": "{index} // ARCHIVE",
       "serialPlate": "{index} // PLATE",
       "provenance": "Every NOIRÉ instrument ships with an individual Zürich anechoic calibration certificate and a 3-to-10-year structural warranty.",
-      "tolerance": "TOLERANCE ±0.02MM"
+      "tolerance": "TOLERANCE ±0.02MM",
+      "errorCode": "ERR // CATALOG-503",
+      "errorRetry": "Retry"
     },
     "sidebar": {
       "aria": "Catalog filters",
@@ -528,7 +535,8 @@
       "finishMobile": "03 // FINISH & METALLURGY",
       "availabilityMobile": "04 // AVAILABILITY"
     },
-    "filters": {}
+    "filters": {},
+    "serviceError": "Unable to reach the NOIRÉ catalog service. Please check your connection and retry."
   },
   "notFound": {
     "code": "ERR // 404 — ROUTE UNRECOGNIZED",
@@ -1492,6 +1500,108 @@
       "quickAdded": "Added ✓",
       "quickReserve": "Reserve",
       "quickAdd": "+ Add"
+    }
+  },
+  "pages": {
+    "shop": {
+      "title": "Shop All",
+      "description": "Explore NOIRÉ’s complete catalog of audio, lighting, desk systems, mechanical keyboards and portable power."
+    },
+    "cart": {
+      "title": "Your Bag",
+      "description": "Review the items in your NOIRÉ bag before checkout."
+    },
+    "checkout": {
+      "title": "Checkout",
+      "description": "Complete your NOIRÉ order — pay in cash on delivery or by bank transfer."
+    },
+    "wishlist": {
+      "title": "Saved Items",
+      "description": "Your saved NOIRÉ products, kept in this browser."
+    },
+    "account": {
+      "title": "My Account",
+      "description": "Your NOIRÉ orders, saved products, delivery addresses, and preferences."
+    },
+    "accountOrder": {
+      "title": "Order Details",
+      "description": "Review the items, delivery, and payment status of your NOIRÉ order."
+    },
+    "orderConfirmation": {
+      "title": "Order Confirmation",
+      "description": "Your NOIRÉ order summary, payment instructions and delivery details."
+    },
+    "productNotFound": {
+      "title": "Product Not Found",
+      "description": "The requested product could not be located."
+    },
+    "signIn": {
+      "title": "Sign In"
+    }
+  },
+  "productNotFound": {
+    "code": "ERR // 404 — PRODUCT NOT FOUND",
+    "title": "This Product Is Not in the Catalog",
+    "description": "The product you are looking for is not in the current catalog. It may have been retired or the link may be mistyped.",
+    "primaryAction": "Browse the Full Catalog",
+    "secondaryAction": "Return to Home",
+    "featuredEyebrow": "AVAILABLE NOW",
+    "featuredTitle": "Featured Products",
+    "featuredIndex": "0{index} // FEATURED"
+  },
+  "errors": {
+    "retry": "Try again",
+    "returnHome": "Return Home",
+    "returnShop": "Return to Shop",
+    "cart": {
+      "code": "ERR // BAG-500",
+      "title": "Your bag could not be loaded",
+      "description": "A temporary service interruption prevented your bag from loading. Please retry or return to the shop.",
+      "retry": "Retry"
+    },
+    "checkout": {
+      "code": "ERR // CHECKOUT-500",
+      "title": "Checkout could not be loaded",
+      "description": "Your bag and checkout draft are still saved. Retry, or return to your bag; no payment has been attempted.",
+      "retry": "Retry checkout",
+      "back": "Return to bag"
+    },
+    "wishlist": {
+      "code": "SAVED // CONNECTION INTERRUPTED",
+      "title": "Your saved items could not be loaded",
+      "description": "Catalog records are temporarily unavailable. Your saved items remain in this browser; retry to resolve them against the current catalog.",
+      "retry": "Retry"
+    },
+    "product": {
+      "code": "ERR // PRODUCT-500",
+      "title": "The product could not be loaded",
+      "description": "A temporary interruption prevented the product details from loading. Please retry or return to the shop.",
+      "retry": "Retry"
+    },
+    "account": {
+      "code": "ERR // ACCOUNT-500",
+      "title": "Your account could not be opened",
+      "description": "Your account could not be loaded. Nothing has been changed — retry the request or return to the homepage.",
+      "retry": "Retry"
+    },
+    "accountOrder": {
+      "code": "ERR // ORDER-500",
+      "title": "The order could not be loaded",
+      "description": "This order could not be loaded. Nothing has been changed — retry, or return to your account.",
+      "retry": "Retry",
+      "back": "Return to my orders"
+    },
+    "orderConfirmation": {
+      "code": "ERR // ORDER-RECORD",
+      "title": "The order record could not be loaded",
+      "description": "The record may be temporarily unavailable. Retry, continue shopping, or review your bag; opening this page does not alter payment or inventory.",
+      "retry": "Retry",
+      "back": "Continue shopping"
+    },
+    "admin": {
+      "code": "ERR // DASHBOARD",
+      "title": "The dashboard could not be rendered",
+      "description": "An unexpected error interrupted the admin workspace."
     }
   }
 }
