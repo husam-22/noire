@@ -881,17 +881,17 @@ export function CheckoutExperience({
       const shippingAddressRecord = makeAddress(
         shippingAddress,
         'checkout-shipping',
-        'Delivery Address',
+        t('addressLabels.delivery'),
         true,
         billingSameAsShipping,
         customer.phone
       );
       const billingAddressRecord = billingSameAsShipping
-        ? { ...shippingAddressRecord, id: 'checkout-billing', label: 'Billing Address', isDefaultShipping: false, isDefaultBilling: true }
+        ? { ...shippingAddressRecord, id: 'checkout-billing', label: t('addressLabels.billing'), isDefaultShipping: false, isDefaultBilling: true }
         : makeAddress(
             billingAddress,
             'checkout-billing',
-            'Billing Address',
+            t('addressLabels.billing'),
             false,
             true,
             customer.phone
@@ -1041,17 +1041,17 @@ export function CheckoutExperience({
       const shippingAddressRecord = makeAddress(
         shippingAddress,
         'checkout-shipping',
-        'Delivery Address',
+        t('addressLabels.delivery'),
         true,
         billingSameAsShipping,
         customer.phone
       );
       const billingAddressRecord = billingSameAsShipping
-        ? { ...shippingAddressRecord, id: 'checkout-billing', label: 'Billing Address', isDefaultShipping: false, isDefaultBilling: true }
+        ? { ...shippingAddressRecord, id: 'checkout-billing', label: t('addressLabels.billing'), isDefaultShipping: false, isDefaultBilling: true }
         : makeAddress(
             billingAddress,
             'checkout-billing',
-            'Billing Address',
+            t('addressLabels.billing'),
             false,
             true,
             customer.phone

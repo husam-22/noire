@@ -435,7 +435,8 @@
       "retry": "إعادة المحاولة"
     },
     "rated": "تقييم {rating} من 5",
-    "tabs": "أقسام المحتوى"
+    "tabs": "أقسام المحتوى",
+    "announcement": "إعلان"
   },
   "product": {
     "badges": {
@@ -972,7 +973,11 @@
       "promoRemoved": "تمت إزالة كود الخصم.",
       "choosePayment": "اختر طريقة الدفع."
     },
-    "loading": "جارٍ تحميل صفحة الدفع"
+    "loading": "جارٍ تحميل صفحة الدفع",
+    "addressLabels": {
+      "delivery": "عنوان التوصيل",
+      "billing": "عنوان الفوترة"
+    }
   },
   "orders": {
     "status": {

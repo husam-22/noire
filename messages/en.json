@@ -374,7 +374,8 @@
       "retry": "Retry Connection"
     },
     "rated": "Rated {rating} out of 5",
-    "tabs": "Content sections"
+    "tabs": "Content sections",
+    "announcement": "Announcement"
   },
   "product": {
     "badges": {
@@ -884,7 +885,11 @@
       "promoRemoved": "Discount code removed.",
       "choosePayment": "Choose how you would like to pay."
     },
-    "loading": "Loading checkout"
+    "loading": "Loading checkout",
+    "addressLabels": {
+      "delivery": "Delivery Address",
+      "billing": "Billing Address"
+    }
   },
   "orders": {
     "status": {
