@@ -537,5 +537,24 @@
     "featuredEyebrow": "ACTIVE ALLOCATIONS",
     "featuredTitle": "Featured Serialized Instruments",
     "featuredIndex": "{index} // FEATURED"
+  },
+  "auth": {
+    "eyebrow": "CLIENT ACCESS // SECURE LINK",
+    "title": "Sign in to your archive",
+    "description": "Enter your email and we will send a one-time secure link. No passwords are stored.",
+    "emailLabel": "Email address",
+    "emailPlaceholder": "you@studio.com",
+    "submit": "Send secure link",
+    "sending": "Sending…",
+    "sentTitle": "Check your inbox",
+    "sentDescription": "A sign-in link is on its way. It expires in one hour and can be used once.",
+    "legal": "By continuing you agree to receive transactional email about your account and orders.",
+    "notConfigured": "Authentication is not connected in this preview. Configure Supabase to enable client access.",
+    "errors": {
+      "invalid_email": "Enter a valid email address.",
+      "send_failed": "We could not send the link. Please try again in a moment.",
+      "auth_not_configured": "Authentication is not configured.",
+      "callback": "The sign-in link is invalid or has expired. Request a new one."
+    }
   }
 }
