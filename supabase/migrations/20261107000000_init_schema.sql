@@ -80,6 +80,14 @@ returns boolean language sql stable as $$
   select public.is_service_role() or public.jwt_role() in ('admin', 'staff')
 $$;
 
+-- `array_to_string` is only STABLE in Postgres, so it cannot be used directly in
+-- a generated column. For text[] the result is deterministic, so this wrapper
+-- is safely IMMUTABLE and lets `products.search_vector` index materials.
+create or replace function public.text_array_to_search_text(arr text[])
+returns text language sql immutable parallel safe as $$
+  select coalesce(array_to_string(arr, ' '), '')
+$$;
+
 -- ----------------------------------------------------------------------------
 -- 3. Identity
 -- ----------------------------------------------------------------------------
@@ -290,7 +298,7 @@ create table public.products (
                           setweight(to_tsvector('simple', coalesce(model_number, '') || ' ' || coalesce(sku, '')), 'A') ||
                           setweight(to_tsvector('simple', coalesce(subtitle, '')), 'B') ||
                           setweight(to_tsvector('simple', coalesce(short_description, '')), 'C') ||
-                          setweight(to_tsvector('simple', array_to_string(materials, ' ')), 'C')
+                          setweight(to_tsvector('simple', public.text_array_to_search_text(materials)), 'C')
                         ) stored,
   created_at            timestamptz not null default now(),
   updated_at            timestamptz not null default now()
