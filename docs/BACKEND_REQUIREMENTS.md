@@ -25,6 +25,7 @@
 |---|---|
 | `supabase/migrations/20261107000000_init_schema.sql` | المخطط الكامل: 24 جدولاً، Enums، Triggers، Views، سياسات RLS، Grants |
 | `supabase/migrations/20261107000100_commerce_functions.sql` | دوال RPC: `place_order`, `validate_discount`, `quote_shipping`, `set_order_status`, `mark_order_paid`, `admin_dashboard_stats` |
+| `supabase/migrations/20261107000200_fix_handle_new_user.sql` | إصلاح trigger إنشاء الملف الشخصي: الرابط السحري لا يحمل اسماً فكان يفشل بـ NOT NULL على `last_name` (ولا يُرسَل البريد)؛ كما يحفظ `preferred_locale` من نموذج الدخول |
 | `supabase/config.toml` | إعدادات Supabase CLI للتطوير المحلي (المنافذ، Auth redirects، Storage bucket) |
 | `scripts/seed-supabase.ts` | تحميل بيانات الكتالوج الحالية + الترجمات العربية إلى قاعدة البيانات (`npm run db:seed`) |
 | `scripts/seed-rows.ts` | مُنشئ الصفوف المشترك بين `db:seed` و`db:seed:sql` (ترتيب آمن للمفاتيح الأجنبية) |
