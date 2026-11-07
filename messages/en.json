@@ -558,5 +558,424 @@
       "auth_not_configured": "Sign-in is temporarily unavailable.",
       "callback": "The sign-in link is invalid or has expired. Request a new one."
     }
+  },
+  "cart": {
+    "breadcrumb": {
+      "home": "Home",
+      "shop": "Shop",
+      "bag": "Bag"
+    },
+    "telemetry": {
+      "brand": "NOIRÉ // BAG",
+      "units": "ACTIVE UNITS: [{count}]",
+      "secure": "SECURE CHECKOUT"
+    },
+    "eyebrow": "ORDER SUMMARY",
+    "lineCount": "{lines, plural, one {# LINE} other {# LINES}} // {units, plural, one {# UNIT} other {# UNITS}}",
+    "title": "Your Bag",
+    "intro": "Review your configurations and finishes, then continue to checkout. Pay in cash on delivery or by bank transfer.",
+    "continueShopping": "Continue Shopping",
+    "bagDrawer": "Bag Drawer [{count}]",
+    "clear": "Clear Bag",
+    "freeShipping": {
+      "above": "FREE DELIVERY ON ORDERS ABOVE {amount}",
+      "unlocked": "FREE DELIVERY UNLOCKED",
+      "addMore": "ADD {amount} MORE FOR FREE DELIVERY",
+      "progress": "Free delivery progress"
+    },
+    "empty": {
+      "code": "BAG // 00 ITEMS",
+      "title": "Your bag is empty",
+      "description": "Explore the full collection of audio, lighting and desk hardware, or add something from your saved items below.",
+      "explore": "Explore the Shop",
+      "search": "Search Catalog"
+    },
+    "saved": {
+      "eyebrow": "SAVED FOR LATER",
+      "title": "Saved in Your Wishlist ({count})",
+      "hint": "ONE-CLICK TRANSFER TO BAG",
+      "moveToBag": "Move to Bag",
+      "view": "View",
+      "compact": "Saved for later ({count})",
+      "available": "AVAILABLE TO ADD BACK",
+      "add": "Add"
+    },
+    "columns": {
+      "item": "01 // PRODUCT & CONFIGURATION",
+      "quantity": "02 // QUANTITY",
+      "total": "03 // LINE TOTAL"
+    },
+    "line": {
+      "label": "LINE {index}",
+      "finish": "FINISH:",
+      "option": "OPTION:",
+      "spec": "SPEC:",
+      "standard": "Standard configuration",
+      "saveForLater": "Save for Later",
+      "quickView": "Quick View",
+      "remove": "Remove",
+      "removeAria": "Remove {name} from bag",
+      "quantity": "QUANTITY",
+      "max": "MAX {count} UNITS",
+      "lineTotal": "LINE TOTAL",
+      "perUnit": "{price} / unit",
+      "times": "{price} × {quantity}",
+      "imageAlt": "{name} in {color}"
+    },
+    "summary": {
+      "eyebrow": "02 // SUMMARY",
+      "title": "Order Summary",
+      "units": "{count, plural, one {# UNIT} other {# UNITS}}",
+      "discountCode": "Discount Code",
+      "optional": "OPTIONAL",
+      "placeholder": "E.G. EDITION04",
+      "apply": "Apply",
+      "verifying": "Verifying...",
+      "active": "{code} ACTIVE",
+      "minimum": "Requires minimum subtotal of {amount}",
+      "removeCode": "Remove discount code {code}",
+      "subtotal": "Subtotal ({count, plural, one {# unit} other {# units}})",
+      "discount": "Discount ({code})",
+      "delivery": "Delivery",
+      "complimentary": "FREE",
+      "tax": "Tax",
+      "taxInfo": "About taxes and duties",
+      "included": "INCLUDED",
+      "taxNote": "Prices include applicable taxes. Import duties, where they apply, are settled by the recipient on delivery.",
+      "total": "Total",
+      "totalNote": "USD // PAY ON DELIVERY OR BY TRANSFER",
+      "checkout": "Proceed to Checkout",
+      "warrantyLabel": "Warranty:",
+      "warranty": "Every product is covered by the manufacturer warranty stated on its page.",
+      "returnsLabel": "Returns:",
+      "returns": "Unused items in original packaging can be returned within 14 days of delivery.",
+      "paymentLabel": "Payment:",
+      "payment": "No card details are collected online. Pay the courier on delivery or by bank transfer after our team confirms your order."
+    },
+    "related": {
+      "eyebrow": "YOU MAY ALSO LIKE",
+      "title": "Engineered to Pair With Your Order",
+      "viewAll": "View All Products",
+      "companion": "0{index} // COMPANION"
+    },
+    "recent": {
+      "eyebrow": "RECENTLY VIEWED",
+      "title": "Recently Viewed Products",
+      "note": "SAVED ON THIS DEVICE",
+      "index": "REC // 0{index}"
+    },
+    "sticky": {
+      "total": "{count, plural, one {# UNIT} other {# UNITS}} // ESTIMATED TOTAL",
+      "checkout": "Checkout"
+    },
+    "loading": "Loading your bag"
+  },
+  "checkout": {
+    "payment": {
+      "cash_on_delivery": {
+        "label": "Cash on delivery",
+        "summary": "Pay the courier in full when your order arrives.",
+        "detail": "Our team confirms the order by phone or email before dispatch. Have the exact amount ready for the courier."
+      },
+      "bank_transfer": {
+        "label": "Bank transfer",
+        "summary": "Transfer the total to our account; we dispatch once the payment is confirmed.",
+        "detail": "Bank details are included in your order confirmation. Use your order number as the transfer reference."
+      },
+      "manual": "Manual settlement",
+      "legend": "Payment method",
+      "choose": "Choose how you would like to pay.",
+      "noCard": "No card details are collected on this site. Your order stays reserved while payment is pending and is marked paid once our team confirms it.",
+      "confirmedNote": "{method} // confirmed by our team before dispatch",
+      "reviewBank": "Bank details follow in your confirmation; we dispatch once the transfer is confirmed.",
+      "reviewCash": "Pay the courier when your order arrives."
+    },
+    "required": "Required",
+    "optional": "// optional",
+    "fields": {
+      "firstName": "First name",
+      "lastName": "Last name",
+      "email": "Email address",
+      "emailShort": "Email",
+      "phone": "Phone",
+      "country": "Country / Region",
+      "countryShort": "Country",
+      "company": "Company / Studio",
+      "line1": "Address",
+      "street": "Street address",
+      "line2": "Apartment / Suite / Floor",
+      "city": "City",
+      "state": "State / Province",
+      "postalCode": "Postal code",
+      "deliveryPhone": "Delivery phone",
+      "emailHint": "Your order confirmation will be sent to this email.",
+      "phoneHint": "Include a country code for consistent local record formatting.",
+      "deliveryPhoneHint": "The courier may call this number on the day of delivery.",
+      "isRequired": "{label} is required.",
+      "phoneRequired": "A delivery phone number is required.",
+      "phoneInvalid": "Enter an international phone number with 7–15 digits.",
+      "emailInvalid": "Enter a valid email address, such as studio@example.com."
+    },
+    "countries": {
+      "other": "Other / International"
+    },
+    "empty": {
+      "code": "CHECKOUT // EMPTY BAG",
+      "title": "Your bag is empty.",
+      "description": "Add a product from the shop before starting checkout.",
+      "explore": "Explore the Shop",
+      "reviewBag": "Review bag"
+    },
+    "brand": "NOIRÉ // CHECKOUT",
+    "returnToBag": "Return to bag",
+    "backToBag": "Back to bag",
+    "editBag": "Edit bag",
+    "units": "{count, plural, one {# UNIT} other {# UNITS}}",
+    "crumb": {
+      "bag": "Bag",
+      "checkout": "Checkout",
+      "code": "CHECKOUT // NR-{year} · {units}"
+    },
+    "header": {
+      "eyebrow": "NOIRÉ // SECURE CHECKOUT",
+      "title": "Checkout",
+      "intro": "Enter your contact and delivery details, choose how you would like to pay, and review your order. Pay in cash on delivery or by bank transfer — our team confirms every order before dispatch."
+    },
+    "nav": {
+      "label": "Checkout sections",
+      "client": "Client",
+      "delivery": "Delivery",
+      "settlement": "Payment",
+      "review": "Review"
+    },
+    "issues": {
+      "title": "Bag validation // action required",
+      "remove": "Remove affected line",
+      "applyQuantity": "Apply available quantity",
+      "acceptPrice": "Accept current price",
+      "reviewQuantities": "Review quantities in bag"
+    },
+    "generalError": {
+      "title": "Checkout needs attention",
+      "link": "Review bag and continue"
+    },
+    "sections": {
+      "client": {
+        "title": "Client information",
+        "detail": "We use these details to confirm your order and coordinate delivery.",
+        "note": "Signed-in customers can track this order from their account. Guests receive every update by email."
+      },
+      "delivery": {
+        "title": "Delivery address",
+        "detail": "Where should we deliver your order?",
+        "required": "Required"
+      },
+      "shipping": {
+        "label": "Delivery option",
+        "title": "Choose a delivery option",
+        "updating": "Updating options",
+        "retry": "Retry",
+        "legend": "Select a shipping method",
+        "included": "INCLUDED",
+        "note": "Delivery windows are estimates and start once your order is confirmed. You will receive tracking details by email when it ships."
+      },
+      "payment": {
+        "title": "Payment",
+        "detail": "Choose how you would like to pay. Nothing is charged online — our team confirms the order with you first."
+      },
+      "billing": {
+        "same": "Billing address is the same as delivery address",
+        "label": "Billing // separate address",
+        "title": "Billing address"
+      },
+      "notes": {
+        "label": "Delivery note",
+        "placeholder": "Access notes, preferred receiving window, or other details",
+        "counter": "{count} / 500 characters"
+      },
+      "review": {
+        "title": "Final review",
+        "detail": "Check your details before placing the order. You can still edit any section.",
+        "finalStep": "Final step",
+        "client": "Client",
+        "editClient": "Edit client",
+        "delivery": "Delivery",
+        "editAddress": "Edit address",
+        "billing": "Billing address",
+        "editBilling": "Edit billing",
+        "deliveryOption": "Delivery option",
+        "editDelivery": "Edit delivery",
+        "unavailable": "Unavailable",
+        "paymentMethod": "Payment method",
+        "editPayment": "Edit payment",
+        "items": "Items // {units}",
+        "inOrder": "In this order",
+        "editItems": "Edit items",
+        "discount": "Discount",
+        "noDiscount": "No discount code applied",
+        "tax": "Tax",
+        "taxIncluded": "Included in the listed prices.",
+        "nextTitle": "What happens next",
+        "nextBody": "Placing the order reserves your items and sends a confirmation email with your order number. Our team then confirms the order with you and arranges payment on delivery or by bank transfer before dispatch.",
+        "secure": "Your details are transmitted securely and stored only with your order"
+      }
+    },
+    "lines": {
+      "view": "View {name}",
+      "qty": "QTY {count}",
+      "perUnit": "{price} / UNIT"
+    },
+    "totals": {
+      "subtotal": "Subtotal",
+      "discount": "Discount",
+      "delivery": "Delivery",
+      "included": "INCLUDED",
+      "tax": "Tax",
+      "total": "Total",
+      "totalNote": "USD // payable on delivery or by transfer"
+    },
+    "summary": {
+      "label": "Order summary",
+      "title": "Summary",
+      "discountCode": "Discount code",
+      "remove": "Remove",
+      "code": "Code",
+      "placeholder": "ENTER CODE",
+      "apply": "Apply",
+      "minimum": "Minimum order value {amount} required.",
+      "taxInfo": "About taxes and duties",
+      "taxNote": "Prices include applicable taxes. Import duties, where they apply, are settled by the recipient on delivery.",
+      "failed": "The prior attempt did not complete. Your bag remains available; review the flagged section and retry.",
+      "placeOrder": "Place Order",
+      "reviewAndPlace": "Review & Place Order",
+      "trust1": "Order confirmation",
+      "trust2": "Tracked delivery",
+      "trust3": "No card details stored",
+      "stickyTotal": "{units} // EST. TOTAL"
+    },
+    "messages": {
+      "noDeliveryOption": "No delivery option is available for this destination yet. Check the selected country or contact us.",
+      "deliveryLoadFailed": "Delivery options could not be loaded. Retry or return to your bag.",
+      "deliveryStillUnavailable": "Delivery options are still unavailable. Retry later or return to your bag.",
+      "emptyBag": "Your bag is empty. Add a product before continuing.",
+      "deliveryLoading": "Delivery options are still loading for this destination. Wait a moment, then continue.",
+      "deliveryNone": "No delivery option is available for this destination. Retry the lookup.",
+      "deliveryChanged": "The delivery option changed. Review the revised total, then continue.",
+      "discountChanged": "The discount code changed. It has been removed; review your revised total.",
+      "discountUnconfirmed": "The discount code could not be confirmed and has been removed. Review the updated total before continuing.",
+      "totalChanged": "The order total changed. Review the updated summary.",
+      "validationFailed": "Checkout validation failed: {message}",
+      "validationUnavailable": "Checkout validation could not be completed. Retry or return to your bag.",
+      "confirming": "Confirming stock, delivery and discount details…",
+      "deliveryUnresolved": "The selected delivery option could not be resolved. Choose an available option and retry.",
+      "placing": "Placing your order…",
+      "orderErrorPreserved": "{message} Your bag has been preserved; review the details and retry.",
+      "orderServiceUnavailable": "The order service is unavailable. Your bag has been preserved; retry or return to the bag.",
+      "promoUnavailable": "Discount codes cannot be checked right now. Try again shortly.",
+      "bagUpdated": "Your bag has been updated. Review the refreshed total and continue.",
+      "promoRemoved": "Discount code removed.",
+      "choosePayment": "Choose how you would like to pay."
+    },
+    "loading": "Loading checkout"
+  },
+  "orders": {
+    "status": {
+      "pending_settlement": "Pending confirmation",
+      "processing": "Processing",
+      "craft_calibration": "In preparation",
+      "shipped": "Shipped",
+      "delivered": "Delivered",
+      "cancelled": "Cancelled",
+      "returned": "Returned"
+    },
+    "paymentStatus": {
+      "paid": "Paid",
+      "pending": "Pending",
+      "refunded": "Refunded",
+      "failed": "Failed"
+    },
+    "paymentMethod": {
+      "cash_on_delivery": "Cash on delivery",
+      "bank_transfer": "Bank transfer",
+      "wire_transfer": "Wire transfer",
+      "apple_pay": "Apple Pay",
+      "card": "Card",
+      "manual": "Manual settlement"
+    }
+  },
+  "orderConfirmation": {
+    "loading": "Loading order",
+    "brand": "NOIRÉ // ORDERS",
+    "notFound": {
+      "code": "ORDER // NOT FOUND",
+      "title": "We couldn't find this order.",
+      "description": "The link may be incomplete or the order may belong to another account. Signed-in customers can find every order under their account.",
+      "continue": "Continue shopping",
+      "account": "Go to my account"
+    },
+    "hero": {
+      "received": "NOIRÉ // ORDER RECEIVED",
+      "confirmed": "NOIRÉ // ORDER CONFIRMED",
+      "title": "Thank you, {name}",
+      "intro": "Your order has been received and your items are reserved. A confirmation has been sent to {email}. Our team will be in touch to confirm the details before dispatch.",
+      "reference": "ORDER REFERENCE"
+    },
+    "pending": {
+      "title": "Payment pending // {method}",
+      "bank": "Please transfer {amount} using order number {orderNumber} as the reference. We dispatch as soon as the transfer is confirmed by our team.",
+      "cash": "Please have {amount} ready for the courier on delivery. Our team will call or email to confirm the delivery window before the order ships.",
+      "bankDetails": "Bank details",
+      "reference": "Reference // {orderNumber}",
+      "support": "Questions? Contact us at {contact}."
+    },
+    "meta": {
+      "order": "ORDER // {orderNumber}",
+      "status": "STATUS // {status}",
+      "payment": "PAYMENT // {status}",
+      "view": "View order",
+      "continue": "Continue shopping"
+    },
+    "items": {
+      "code": "Order items // 01—{count}",
+      "title": "Items in this order",
+      "units": "{count, plural, one {# unit} other {# units}}",
+      "view": "View {name}",
+      "qty": "QTY {quantity} · UNIT {price}",
+      "line": "LINE {price}"
+    },
+    "shipping": {
+      "fallback": "Shipping method",
+      "windowPending": "Delivery window to be confirmed.",
+      "tracking": "Tracking // {number}",
+      "estimate": "Delivery estimate: {date}",
+      "address": "Delivery address"
+    },
+    "totals": {
+      "code": "Totals // USD",
+      "title": "Payment summary",
+      "subtotal": "Subtotal",
+      "discount": "Discount",
+      "delivery": "Delivery",
+      "tax": "Tax",
+      "included": "INCLUDED",
+      "totalDue": "Total due",
+      "pending": "Payment pending",
+      "paid": "Paid",
+      "method": "Payment method",
+      "noCard": "No card details are collected or stored on this site."
+    },
+    "note": {
+      "code": "A note from NOIRÉ",
+      "title": "What happens next.",
+      "pending": "We review every order personally. Once payment is confirmed, your items move into preparation and you will receive dispatch and tracking details by email.",
+      "paid": "Your payment is confirmed and your order is being prepared. Dispatch and tracking details will follow by email.",
+      "placed": "Order placed"
+    },
+    "footer": {
+      "reference": "Order reference // {orderNumber}",
+      "keep": "Keep this page or your confirmation email for your records.",
+      "continue": "Continue shopping",
+      "track": "Track in my account"
+    }
   }
 }

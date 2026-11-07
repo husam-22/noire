@@ -1,12 +1,14 @@
 import React from 'react';
+import { useTranslations } from 'next-intl';
 import { Container } from '@/components/layout';
 import { Skeleton } from '@/components/ui';
 
 export function CartSkeleton() {
+  const t = useTranslations('cart');
   return (
     <div
       aria-busy="true"
-      aria-label="Loading allocation bag dossier"
+      aria-label={t('loading')}
       className="min-h-screen bg-background pt-20 text-foreground"
     >
       {/* Telemetry Bar Skeleton */}

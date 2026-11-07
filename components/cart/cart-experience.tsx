@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Link } from '@/i18n/navigation';
+import { useTranslations } from 'next-intl';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import {
   ShoppingBag,
@@ -19,7 +20,6 @@ import {
   AlertCircle,
   X,
   Plus,
-  Sparkles,
   Lock,
   Info,
 } from 'lucide-react';
@@ -46,6 +46,7 @@ export interface CartExperienceProps {
 }
 
 export function CartExperience({ allProducts }: CartExperienceProps) {
+  const t = useTranslations('cart');
   const prefersReducedMotion = useReducedMotion();
   const {
     cart,
@@ -198,28 +199,6 @@ export function CartExperience({ allProducts }: CartExperienceProps) {
     }
   };
 
-  const handleLoadSampleCommission = () => {
-    const aether = allProducts.find((p) => p.slug === 'aether-01-headphones');
-    const solis = allProducts.find((p) => p.slug === 'solis-cantilever-lamp');
-    if (aether) {
-      addToCart({
-        product: aether,
-        color: aether.colors[0],
-        option: aether.options?.[1] ?? aether.options?.[0],
-        quantity: 1,
-        openDrawer: false,
-      });
-    }
-    if (solis) {
-      addToCart({
-        product: solis,
-        color: solis.colors[1] ?? solis.colors[0],
-        quantity: 1,
-        openDrawer: false,
-      });
-    }
-  };
-
   if (!isCartHydrated) {
     return <CartSkeleton />;
   }
@@ -233,14 +212,14 @@ export function CartExperience({ allProducts }: CartExperienceProps) {
           className="flex flex-wrap items-center justify-between gap-4 py-3.5"
         >
           <nav
-            aria-label="Breadcrumb"
+            aria-label={t('breadcrumb.home')}
             className="flex flex-wrap items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em]"
           >
             <Link
               href="/"
               className="text-foreground-muted transition-colors hover:text-foreground"
             >
-              Home
+              {t('breadcrumb.home')}
             </Link>
             <ChevronRight
               className="h-3 w-3 shrink-0 text-foreground-subtle"
@@ -250,25 +229,25 @@ export function CartExperience({ allProducts }: CartExperienceProps) {
               href="/shop"
               className="text-foreground-muted transition-colors hover:text-foreground"
             >
-              Shop
+              {t('breadcrumb.shop')}
             </Link>
             <ChevronRight
               className="h-3 w-3 shrink-0 text-foreground-subtle"
               aria-hidden="true"
             />
             <span aria-current="page" className="font-medium text-foreground">
-              Bag
+              {t('breadcrumb.bag')}
             </span>
           </nav>
 
           <div className="hidden items-center gap-4 font-mono text-[10px] uppercase tracking-[0.14em] text-foreground-subtle md:flex">
-            <span>NOIRÉ // BAG</span>
+            <span>{t('telemetry.brand')}</span>
             <span className="text-border-strong">·</span>
             <span>
-              ACTIVE UNITS: [{String(cartCount).padStart(2, '0')}]
+              {t('telemetry.units', { count: String(cartCount).padStart(2, '0') })}
             </span>
             <span className="text-border-strong">·</span>
-            <span>SECURE CHECKOUT</span>
+            <span>{t('telemetry.secure')}</span>
           </div>
         </Container>
       </div>
@@ -280,19 +259,17 @@ export function CartExperience({ allProducts }: CartExperienceProps) {
             <div className="space-y-3">
               <div className="flex flex-wrap items-center gap-3">
                 <Eyebrow index="01" tone="accent">
-                  COMMISSION MANIFEST
+                  {t('eyebrow')}
                 </Eyebrow>
                 <span className="border border-border bg-surface px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.14em] text-foreground-muted">
-                  {cart.length} {cart.length === 1 ? 'LINE' : 'LINES'} {'//'}{' '}
-                  {cartCount} {cartCount === 1 ? 'UNIT' : 'UNITS'}
+                  {t('lineCount', { lines: cart.length, units: cartCount })}
                 </span>
               </div>
               <h1 className="font-display text-display-md tracking-tight text-foreground">
-                Your Bag
+                {t('title')}
               </h1>
               <p className="max-w-2xl font-sans text-body-md leading-relaxed text-foreground-muted">
-                Review your configurations and finishes, then continue to checkout.
-                Pay in cash on delivery or by bank transfer.
+                {t('intro')}
               </p>
             </div>
 
@@ -301,8 +278,8 @@ export function CartExperience({ allProducts }: CartExperienceProps) {
                 href="/shop"
                 className="inline-flex h-10 items-center gap-2 border border-border bg-surface px-4 font-mono text-[11px] uppercase tracking-[0.14em] text-foreground transition-colors hover:border-foreground"
               >
-                <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
-                <span>Continue Shopping</span>
+                <ArrowLeft className="h-3.5 w-3.5 rtl:rotate-180" aria-hidden="true" />
+                <span>{t('continueShopping')}</span>
               </Link>
 
               <button
@@ -311,7 +288,7 @@ export function CartExperience({ allProducts }: CartExperienceProps) {
                 className="inline-flex h-10 items-center gap-2 border border-border bg-surface-muted px-4 font-mono text-[11px] uppercase tracking-[0.14em] text-foreground-muted transition-colors hover:border-foreground hover:text-foreground"
               >
                 <ShoppingBag className="h-3.5 w-3.5" aria-hidden="true" />
-                <span>Bag Drawer [{String(cartCount).padStart(2, '0')}]</span>
+                <span>{t('bagDrawer', { count: String(cartCount).padStart(2, '0') })}</span>
               </button>
 
               {cart.length > 0 && (
@@ -321,7 +298,7 @@ export function CartExperience({ allProducts }: CartExperienceProps) {
                   className="inline-flex h-10 items-center gap-1.5 border border-border px-3.5 font-mono text-[11px] uppercase tracking-[0.14em] text-foreground-subtle transition-colors hover:border-danger hover:text-danger"
                 >
                   <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-                  <span>Clear Manifest</span>
+                  <span>{t('clear')}</span>
                 </button>
               )}
             </div>
@@ -342,22 +319,17 @@ export function CartExperience({ allProducts }: CartExperienceProps) {
                 />
                 <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-foreground">
                   {cartSubtotal === 0 ? (
-                    <>
-                      FREE DELIVERY ON ORDERS ABOVE{' '}
-                      {formatPrice(FREE_SHIPPING_THRESHOLD)}
-                    </>
+                    t('freeShipping.above', { amount: formatPrice(FREE_SHIPPING_THRESHOLD) })
                   ) : amountUntilFreeShipping === 0 ? (
-                    <>
-                      FREE DELIVERY UNLOCKED
-                    </>
+                    t('freeShipping.unlocked')
                   ) : (
-                    <>
-                      ADD{' '}
-                      <span className="font-semibold text-accent">
-                        {formatPrice(amountUntilFreeShipping)}
-                      </span>{' '}
-                      MORE FOR FREE DELIVERY
-                    </>
+                    t.rich('freeShipping.addMore', {
+                      amount: () => (
+                        <span className="font-semibold text-accent">
+                          {formatPrice(amountUntilFreeShipping)}
+                        </span>
+                      ),
+                    })
                   )}
                 </span>
               </div>
@@ -373,7 +345,7 @@ export function CartExperience({ allProducts }: CartExperienceProps) {
               aria-valuenow={freeShippingProgress}
               aria-valuemin={0}
               aria-valuemax={100}
-              aria-label="Free delivery progress"
+              aria-label={t('freeShipping.progress')}
               className="h-1.5 w-full overflow-hidden bg-surface-muted"
             >
               <div
@@ -392,16 +364,16 @@ export function CartExperience({ allProducts }: CartExperienceProps) {
           {cart.length === 0 ? (
             <div className="space-y-14">
               <EmptyState
-                code="BAG // 00 ITEMS"
-                title="Your bag is empty"
-                description="Explore the full collection of audio, lighting and desk hardware, or add something from your saved items below."
+                code={t('empty.code')}
+                title={t('empty.title')}
+                description={t('empty.description')}
                 icon={<ShoppingBag className="h-5 w-5" />}
                 primaryAction={
                   <Link
                     href="/shop"
                     className="inline-flex h-11 items-center gap-2 border border-foreground bg-foreground px-6 font-mono text-xs uppercase tracking-[0.14em] text-background transition-opacity hover:opacity-90"
                   >
-                    <span>Explore Complete Archive</span>
+                    <span>{t('empty.explore')}</span>
                     <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
                   </Link>
                 }
@@ -412,15 +384,7 @@ export function CartExperience({ allProducts }: CartExperienceProps) {
                       size="md"
                       onClick={() => setIsSearchOpen(true)}
                     >
-                      Search Catalog
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="md"
-                      onClick={handleLoadSampleCommission}
-                      leftIcon={<Sparkles className="h-3.5 w-3.5" />}
-                    >
-                      Load Sample Studio Commission
+                      {t('empty.search')}
                     </Button>
                   </div>
                 }
@@ -432,15 +396,14 @@ export function CartExperience({ allProducts }: CartExperienceProps) {
                   <div className="mb-6 flex flex-wrap items-end justify-between gap-4 border-b border-border pb-4">
                     <div>
                       <Eyebrow index="ARCHIVE" tone="accent">
-                        SAVED FOR LATER
+                        {t('saved.eyebrow')}
                       </Eyebrow>
                       <h2 className="mt-1 font-display text-h3 text-foreground">
-                        Saved in Your Wishlist Archive (
-                        {savedForLaterProducts.length})
+                        {t('saved.title', { count: savedForLaterProducts.length })}
                       </h2>
                     </div>
                     <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-foreground-subtle">
-                      ONE-CLICK TRANSFER TO ACTIVE BAG
+                      {t('saved.hint')}
                     </span>
                   </div>
 
@@ -489,13 +452,13 @@ export function CartExperience({ allProducts }: CartExperienceProps) {
                               className="inline-flex h-8 items-center gap-1.5 border border-foreground bg-foreground px-3 font-mono text-[10px] uppercase tracking-[0.12em] text-background transition-opacity hover:opacity-90"
                             >
                               <Plus className="h-3 w-3" aria-hidden="true" />
-                              <span>Move to Bag</span>
+                              <span>{t('saved.moveToBag')}</span>
                             </button>
                             <Link
                               href={`/product/${product.slug}`}
                               className="inline-flex h-8 items-center border border-border px-2.5 font-mono text-[10px] uppercase tracking-[0.12em] text-foreground-muted transition-colors hover:border-foreground hover:text-foreground"
                             >
-                              Dossier
+                              {t('saved.view')}
                             </Link>
                           </div>
                         </div>
@@ -512,13 +475,13 @@ export function CartExperience({ allProducts }: CartExperienceProps) {
                 {/* Desktop Ledger Column Headers */}
                 <div className="hidden grid-cols-12 border-b border-border pb-3 font-mono text-[10px] uppercase tracking-[0.14em] text-foreground-subtle sm:grid">
                   <div className="col-span-7">
-                    01 // INSTRUMENT &amp; CONFIGURATION
+                    {t('columns.item')}
                   </div>
                   <div className="col-span-3 text-center">
-                    02 // QUANTITY
+                    {t('columns.quantity')}
                   </div>
                   <div className="col-span-2 text-end">
-                    03 // LINE VALUATION
+                    {t('columns.total')}
                   </div>
                 </div>
 
@@ -559,7 +522,7 @@ export function CartExperience({ allProducts }: CartExperienceProps) {
                           <div className="mb-4 flex flex-wrap items-center justify-between gap-2 border-b border-border pb-3">
                             <div className="flex items-center gap-2.5">
                               <span className="bg-surface-muted px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.14em] text-foreground">
-                                LINE {String(idx + 1).padStart(2, '0')}
+                                {t('line.label', { index: String(idx + 1).padStart(2, '0') })}
                               </span>
                               <TechnicalCode>{item.modelNumber}</TechnicalCode>
                               <span className="hidden text-border-strong sm:inline">
@@ -589,7 +552,7 @@ export function CartExperience({ allProducts }: CartExperienceProps) {
                               >
                                 <img
                                   src={item.image}
-                                  alt={`${item.name} in ${item.selectedColor.name}`}
+                                  alt={t('line.imageAlt', { name: item.name, color: item.selectedColor.name })}
                                   className="h-full w-full object-cover transition-transform duration-500 ease-noire-out group-hover:scale-105"
                                 />
                               </Link>
@@ -607,7 +570,7 @@ export function CartExperience({ allProducts }: CartExperienceProps) {
                                   <div className="space-y-1.5 border-s-2 border-border-strong/60 ps-3">
                                     <div className="flex items-center gap-2 text-caption text-foreground">
                                       <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-foreground-subtle">
-                                        FINISH:
+                                        {t('line.finish')}
                                       </span>
                                       <span
                                         className="h-3 w-3 rounded-full border border-border-strong/50"
@@ -625,7 +588,7 @@ export function CartExperience({ allProducts }: CartExperienceProps) {
                                     {item.selectedOption ? (
                                       <div className="flex flex-wrap items-center gap-1.5 text-caption text-foreground">
                                         <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-foreground-subtle">
-                                          OPTION:
+                                          {t('line.option')}
                                         </span>
                                         <span className="font-medium">
                                           {item.selectedOption.label}
@@ -642,9 +605,9 @@ export function CartExperience({ allProducts }: CartExperienceProps) {
                                     ) : (
                                       <div className="flex items-center gap-1.5 text-caption text-foreground-muted">
                                         <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-foreground-subtle">
-                                          SPEC:
+                                          {t('line.spec')}
                                         </span>
-                                        <span>Standard Factory Calibration</span>
+                                        <span>{t('line.standard')}</span>
                                       </div>
                                     )}
                                   </div>
@@ -661,7 +624,7 @@ export function CartExperience({ allProducts }: CartExperienceProps) {
                                       className="h-3.5 w-3.5 text-accent"
                                       aria-hidden="true"
                                     />
-                                    <span>Save for Later</span>
+                                    <span>{t('line.saveForLater')}</span>
                                   </button>
 
                                   {catalogProduct && (
@@ -680,7 +643,7 @@ export function CartExperience({ allProducts }: CartExperienceProps) {
                                           className="h-3.5 w-3.5"
                                           aria-hidden="true"
                                         />
-                                        <span>Quick Inspect</span>
+                                        <span>{t('line.quickView')}</span>
                                       </button>
                                     </>
                                   )}
@@ -689,14 +652,14 @@ export function CartExperience({ allProducts }: CartExperienceProps) {
                                   <button
                                     type="button"
                                     onClick={() => removeFromCart(item.id)}
-                                    aria-label={`Remove ${item.name} from bag`}
+                                    aria-label={t('line.removeAria', { name: item.name })}
                                     className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-foreground-subtle transition-colors hover:text-danger"
                                   >
                                     <Trash2
                                       className="h-3.5 w-3.5"
                                       aria-hidden="true"
                                     />
-                                    <span>Remove</span>
+                                    <span>{t('line.remove')}</span>
                                   </button>
                                 </div>
                               </div>
@@ -705,7 +668,7 @@ export function CartExperience({ allProducts }: CartExperienceProps) {
                             {/* Column 2: Quantity Controls (3 cols) */}
                             <div className="flex items-center justify-between border-t border-border pt-4 sm:col-span-3 sm:flex-col sm:justify-center sm: gap-1.5 sm:border-t-0 sm:pt-0">
                               <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-foreground-subtle sm:hidden">
-                                QUANTITY
+                                {t('line.quantity')}
                               </span>
                               <QuantitySelector
                                 size="sm"
@@ -714,14 +677,14 @@ export function CartExperience({ allProducts }: CartExperienceProps) {
                                 onChange={(q) => updateCartQuantity(item.id, q)}
                               />
                               <span className="hidden font-mono text-[10px] uppercase tracking-[0.12em] text-foreground-subtle sm:inline">
-                                MAX {item.maxQuantity} UNITS
+                                {t('line.max', { count: item.maxQuantity })}
                               </span>
                             </div>
 
                             {/* Column 3: Per-Line Price & Total (2 cols) */}
                             <div className="flex items-baseline justify-between sm:col-span-2 sm:flex-col sm:items-end sm:justify-center">
                               <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-foreground-subtle sm:hidden">
-                                LINE TOTAL
+                                {t('line.lineTotal')}
                               </span>
                               <div className="text-end">
                                 <PriceDisplay
@@ -731,8 +694,8 @@ export function CartExperience({ allProducts }: CartExperienceProps) {
                                 />
                                 <p className="mt-0.5 font-mono text-[10px] tabular-nums text-foreground-subtle">
                                   {item.quantity > 1
-                                    ? `${formatPrice(item.price)} × ${item.quantity}`
-                                    : `${formatPrice(item.price)} / unit`}
+                                    ? t('line.times', { price: formatPrice(item.price), quantity: item.quantity })
+                                    : t('line.perUnit', { price: formatPrice(item.price) })}
                                 </p>
                               </div>
                             </div>
@@ -753,11 +716,11 @@ export function CartExperience({ allProducts }: CartExperienceProps) {
                           aria-hidden="true"
                         />
                         <h2 className="font-mono text-xs uppercase tracking-[0.14em] text-foreground">
-                          Saved in Archive ({savedForLaterProducts.length})
+                          {t('saved.compact', { count: savedForLaterProducts.length })}
                         </h2>
                       </div>
                       <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-foreground-subtle">
-                        AVAILABLE TO ADD BACK
+                        {t('saved.available')}
                       </span>
                     </div>
 
@@ -806,7 +769,7 @@ export function CartExperience({ allProducts }: CartExperienceProps) {
                                   className="h-3 w-3"
                                   aria-hidden="true"
                                 />
-                                <span>Allocate</span>
+                                <span>{t('saved.add')}</span>
                               </button>
                             </div>
                           </div>
@@ -827,18 +790,18 @@ export function CartExperience({ allProducts }: CartExperienceProps) {
                   <div className="mb-6 flex items-center justify-between border-b border-border pb-4">
                     <div>
                       <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-accent">
-                        02 // FINANCIAL LEDGER
+                        {t('summary.eyebrow')}
                       </span>
                       <h2 className="mt-1 font-display text-h3 text-foreground">
-                        Order Summary
+                        {t('summary.title')}
                       </h2>
                     </div>
                     <span className="border border-border bg-surface-muted px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.14em] text-foreground">
-                      {cartCount} {cartCount === 1 ? 'UNIT' : 'UNITS'}
+                      {t('summary.units', { count: cartCount })}
                     </span>
                   </div>
 
-                  {/* Discount / Allocation Code Module */}
+                  {/* Discount code */}
                   <div className="mb-6 border-b border-border pb-6">
                     <div className="mb-2.5 flex items-center justify-between">
                       <label
@@ -849,10 +812,10 @@ export function CartExperience({ allProducts }: CartExperienceProps) {
                           className="h-3.5 w-3.5 text-accent"
                           aria-hidden="true"
                         />
-                        <span>Discount Code</span>
+                        <span>{t('summary.discountCode')}</span>
                       </label>
                       <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-foreground-subtle">
-                        OPTIONAL
+                        {t('summary.optional')}
                       </span>
                     </div>
 
@@ -864,8 +827,8 @@ export function CartExperience({ allProducts }: CartExperienceProps) {
                         onChange={(e) =>
                           setPromoInput(e.target.value.toUpperCase())
                         }
-                        placeholder="E.G. EDITION04"
-                        aria-label="Discount code"
+                        placeholder={t('summary.placeholder')}
+                        aria-label={t('summary.discountCode')}
                         className="h-10 flex-1 border border-border bg-background px-3 font-mono text-xs uppercase tracking-[0.12em] text-foreground placeholder:text-foreground-subtle focus:border-foreground focus:outline-none"
                       />
                       <button
@@ -873,7 +836,7 @@ export function CartExperience({ allProducts }: CartExperienceProps) {
                         disabled={isApplyingPromo || !promoInput.trim()}
                         className="inline-flex h-10 shrink-0 items-center justify-center border border-foreground bg-foreground px-4 font-mono text-[11px] uppercase tracking-[0.14em] text-background transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
                       >
-                        {isApplyingPromo ? 'Verifying...' : 'Apply'}
+                        {isApplyingPromo ? t('summary.verifying') : t('summary.apply')}
                       </button>
                     </form>
 
@@ -886,15 +849,14 @@ export function CartExperience({ allProducts }: CartExperienceProps) {
                               className="h-3.5 w-3.5 text-success"
                               aria-hidden="true"
                             />
-                            <span>{appliedDiscount.code} ACTIVE</span>
+                            <span>{t('summary.active', { code: appliedDiscount.code })}</span>
                           </div>
                           <p className="text-caption text-foreground-muted">
                             {appliedDiscount.description}
                           </p>
                           {discountBelowMinimum && (
                             <p className="font-mono text-[10px] uppercase tracking-[0.1em] text-warning">
-                              Requires minimum subtotal of{' '}
-                              {formatPrice(appliedDiscount.minOrderAmount ?? 0)}
+                              {t('summary.minimum', { amount: formatPrice(appliedDiscount.minOrderAmount ?? 0) })}
                             </p>
                           )}
                         </div>
@@ -904,7 +866,7 @@ export function CartExperience({ allProducts }: CartExperienceProps) {
                             removeDiscountCode();
                             setPromoFeedback(null);
                           }}
-                          aria-label={`Remove discount code ${appliedDiscount.code}`}
+                          aria-label={t('summary.removeCode', { code: appliedDiscount.code })}
                           className="p-1 text-foreground-subtle transition-colors hover:text-danger"
                         >
                           <X className="h-3.5 w-3.5" />
@@ -936,8 +898,7 @@ export function CartExperience({ allProducts }: CartExperienceProps) {
                   <dl className="space-y-3.5 border-b border-border pb-6 font-sans text-body-sm">
                     <div className="flex items-center justify-between">
                       <dt className="text-foreground-muted">
-                        Subtotal ({cartCount}{' '}
-                        {cartCount === 1 ? 'unit' : 'units'})
+                        {t('summary.subtotal', { count: cartCount })}
                       </dt>
                       <dd className="font-mono text-sm tabular-nums text-foreground">
                         {formatPrice(cartSubtotal)}
@@ -947,7 +908,7 @@ export function CartExperience({ allProducts }: CartExperienceProps) {
                     {appliedDiscount && discountAmount > 0 && (
                       <div className="flex items-center justify-between text-accent">
                         <dt className="font-mono text-xs uppercase tracking-[0.12em]">
-                          Discount ({appliedDiscount.code})
+                          {t('summary.discount', { code: appliedDiscount.code })}
                         </dt>
                         <dd className="font-mono text-sm tabular-nums">
                           -{formatPrice(discountAmount)}
@@ -957,11 +918,11 @@ export function CartExperience({ allProducts }: CartExperienceProps) {
 
                     <div className="flex items-center justify-between">
                       <dt className="text-foreground-muted">
-                        Delivery
+                        {t('summary.delivery')}
                       </dt>
                       <dd className="font-mono text-xs uppercase tracking-[0.12em] text-foreground">
                         {shippingEstimateCost === 0 ? (
-                          <span className="text-success">COMPLIMENTARY</span>
+                          <span className="text-success">{t('summary.complimentary')}</span>
                         ) : (
                           formatPrice(shippingEstimateCost)
                         )}
@@ -972,27 +933,27 @@ export function CartExperience({ allProducts }: CartExperienceProps) {
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between">
                         <dt className="flex items-center gap-1.5 text-foreground-muted">
-                          <span>Tax</span>
+                          <span>{t('summary.tax')}</span>
                           <button
                             type="button"
                             onClick={() =>
                               setShowTaxTelemetryNote((prev) => !prev)
                             }
                             aria-expanded={showTaxTelemetryNote}
-                            aria-label="About taxes and duties"
+                            aria-label={t('summary.taxInfo')}
                             className="text-foreground-subtle transition-colors hover:text-foreground"
                           >
                             <Info className="h-3.5 w-3.5" />
                           </button>
                         </dt>
                         <dd className="font-mono text-[11px] uppercase tracking-[0.12em] text-foreground-subtle">
-                          INCLUDED
+                          {t('summary.included')}
                         </dd>
                       </div>
 
                       {showTaxTelemetryNote && (
                         <p className="border-s-2 border-border bg-surface-muted p-2.5 font-mono text-[10px] leading-relaxed text-foreground-muted">
-                          Prices include applicable taxes. Import duties, where they apply, are settled by the recipient on delivery.
+                          {t('summary.taxNote')}
                         </p>
                       )}
                     </div>
@@ -1002,10 +963,10 @@ export function CartExperience({ allProducts }: CartExperienceProps) {
                   <div className="my-6 flex items-baseline justify-between">
                     <div>
                       <span className="block font-mono text-xs uppercase tracking-[0.14em] text-foreground">
-                        Total
+                        {t('summary.total')}
                       </span>
                       <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-foreground-subtle">
-                        USD // PAY ON DELIVERY OR BY TRANSFER
+                        {t('summary.totalNote')}
                       </span>
                     </div>
                     <PriceDisplay price={cartTotal} size="xl" />
@@ -1017,7 +978,7 @@ export function CartExperience({ allProducts }: CartExperienceProps) {
                       href="/checkout"
                       className="flex h-13 w-full items-center justify-between border border-foreground bg-foreground px-6 font-mono text-xs uppercase tracking-[0.16em] text-background transition-opacity hover:opacity-90"
                     >
-                      <span>Proceed to Checkout</span>
+                      <span>{t('summary.checkout')}</span>
                       <span className="flex items-center gap-2">
                         <span className="tabular-nums">
                           {formatPrice(cartTotal)}
@@ -1033,7 +994,7 @@ export function CartExperience({ allProducts }: CartExperienceProps) {
                       href="/shop"
                       className="flex h-11 w-full items-center justify-center border border-border bg-background font-mono text-xs uppercase tracking-[0.14em] text-foreground transition-colors hover:border-foreground"
                     >
-                      Continue Shopping
+                      {t('continueShopping')}
                     </Link>
                   </div>
 
@@ -1046,9 +1007,9 @@ export function CartExperience({ allProducts }: CartExperienceProps) {
                       />
                       <span>
                         <strong className="font-medium text-foreground">
-                          Warranty:
+                          {t('summary.warrantyLabel')}
                         </strong>{' '}
-                        Every product is covered by the manufacturer warranty stated on its page.
+                        {t('summary.warranty')}
                       </span>
                     </div>
                     <div className="flex items-start gap-2.5 text-caption text-foreground-muted">
@@ -1058,9 +1019,9 @@ export function CartExperience({ allProducts }: CartExperienceProps) {
                       />
                       <span>
                         <strong className="font-medium text-foreground">
-                          Returns:
+                          {t('summary.returnsLabel')}
                         </strong>{' '}
-                        Unused items in original packaging can be returned within 14 days of delivery.
+                        {t('summary.returns')}
                       </span>
                     </div>
                     <div className="flex items-start gap-2.5 text-caption text-foreground-muted">
@@ -1070,9 +1031,9 @@ export function CartExperience({ allProducts }: CartExperienceProps) {
                       />
                       <span>
                         <strong className="font-medium text-foreground">
-                          Payment:
+                          {t('summary.paymentLabel')}
                         </strong>{' '}
-                        No card details are collected online. Pay the courier on delivery or by bank transfer after our team confirms your order.
+                        {t('summary.payment')}
                       </span>
                     </div>
                   </div>
@@ -1092,17 +1053,17 @@ export function CartExperience({ allProducts }: CartExperienceProps) {
               <div className="mb-8 flex flex-col justify-between gap-4 border-b border-border pb-6 md:flex-row md:items-end">
                 <div className="space-y-2">
                   <Eyebrow index="03" tone="accent">
-                    COMPLEMENTARY ARCHITECTURE
+                    {t('related.eyebrow')}
                   </Eyebrow>
                   <h2 className="font-display text-h2 tracking-tight text-foreground">
-                    Engineered to Pair With Your Commission
+                    {t('related.title')}
                   </h2>
                 </div>
                 <Link
                   href="/shop"
                   className="inline-flex items-center gap-2 font-mono text-xs uppercase tracking-[0.14em] text-foreground transition-colors hover:text-accent"
                 >
-                  <span>View All Instruments</span>
+                  <span>{t('related.viewAll')}</span>
                   <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
                 </Link>
               </div>
@@ -1112,7 +1073,7 @@ export function CartExperience({ allProducts }: CartExperienceProps) {
                   <ProductCard
                     key={product.id}
                     product={product}
-                    indexLabel={`0${idx + 1} // COMPANION`}
+                    indexLabel={t('related.companion', { index: idx + 1 })}
                   />
                 ))}
               </div>
@@ -1125,14 +1086,14 @@ export function CartExperience({ allProducts }: CartExperienceProps) {
               <div className="mb-8 flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
                 <div className="space-y-2">
                   <Eyebrow index="04" tone="muted">
-                    SESSION ARCHIVE // RECENTLY INSPECTED
+                    {t('recent.eyebrow')}
                   </Eyebrow>
                   <h3 className="font-display text-h3 tracking-tight text-foreground">
-                    Recently Viewed Instruments
+                    {t('recent.title')}
                   </h3>
                 </div>
                 <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-foreground-subtle">
-                  PERSISTED IN LOCAL DOSSIER
+                  {t('recent.note')}
                 </span>
               </div>
 
@@ -1142,7 +1103,7 @@ export function CartExperience({ allProducts }: CartExperienceProps) {
                     key={product.id}
                     product={product}
                     variant="minimal"
-                    indexLabel={`REC // 0${idx + 1}`}
+                    indexLabel={t('recent.index', { index: idx + 1 })}
                   />
                 ))}
               </div>
@@ -1168,8 +1129,7 @@ export function CartExperience({ allProducts }: CartExperienceProps) {
             <div className="mx-auto flex max-w-xl items-center justify-between gap-4">
               <div>
                 <span className="block font-mono text-[10px] uppercase tracking-[0.12em] text-foreground-muted">
-                  {cartCount} {cartCount === 1 ? 'UNIT' : 'UNITS'} {'//'}{' '}
-                  ESTIMATED TOTAL
+                  {t('sticky.total', { count: cartCount })}
                 </span>
                 <PriceDisplay price={cartTotal} size="md" />
               </div>
@@ -1178,7 +1138,7 @@ export function CartExperience({ allProducts }: CartExperienceProps) {
                 href="/checkout"
                 className="inline-flex h-11 items-center gap-2 border border-foreground bg-foreground px-5 font-mono text-xs uppercase tracking-[0.14em] text-background"
               >
-                <span>Checkout</span>
+                <span>{t('sticky.checkout')}</span>
                 <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
               </Link>
             </div>
