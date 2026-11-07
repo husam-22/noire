@@ -11,9 +11,15 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui"
+    "test:e2e:ui": "playwright test --ui",
+    "db:types": "supabase gen types typescript --project-id \"$SUPABASE_PROJECT_REF\" --schema public > types/supabase.ts",
+    "db:push": "supabase db push",
+    "db:reset": "supabase db reset",
+    "db:seed": "tsx scripts/seed-supabase.ts"
   },
   "dependencies": {
+    "@supabase/ssr": "^0.12.7",
+    "@supabase/supabase-js": "^2.119.0",
     "clsx": "^2.1.1",
     "framer-motion": "^11.15.0",
     "lucide-react": "^0.468.0",
@@ -21,6 +27,7 @@
     "next-intl": "^4.14.9",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "server-only": "^0.0.1",
     "tailwind-merge": "^2.6.0"
   },
   "devDependencies": {
@@ -32,11 +39,13 @@
     "@types/react-dom": "^18.3.5",
     "@vitejs/plugin-react": "^4.7.0",
     "autoprefixer": "^10.4.20",
+    "dotenv": "^16.6.1",
     "eslint": "^8.57.1",
     "eslint-config-next": "14.2.35",
     "jsdom": "^26.1.0",
     "postcss": "8.5.28",
     "tailwindcss": "^3.4.17",
+    "tsx": "^4.23.15",
     "typescript": "^5.7.2",
     "vitest": "^3.2.7"
   },

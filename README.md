@@ -2,13 +2,13 @@
 
 ## Current checkpoint
 
-Phase 12 — internationalization (Arabic + English), RTL layout, and automated test baseline.
+Phase 12 — internationalization (Arabic + English), RTL layout, automated test baseline, and Supabase backend scaffolding (schema, RLS, RPCs, auth, seed).
 
 ## Implementation status
 
 This repository preserves a demo storefront and admin interface. Backend/database persistence, admin authentication/authorization, real payment processing, and fulfillment are not production-integrated. Demo checkout remains pending settlement; no payment authorization/capture or fulfillment is connected.
 
-**ADMIN AUTHENTICATION IS NOT IMPLEMENTED.** `noindex, nofollow` is not access control.
+**ADMIN AUTHENTICATION IS ONLY ENFORCED WHEN SUPABASE IS CONFIGURED.** In mock/preview mode `noindex, nofollow` is not access control.
 
 ## Scripts
 
@@ -65,6 +65,30 @@ Conventions:
 | Checkout, account, order confirmation, admin                  | 🔜 RTL layout, EN copy  |
 
 To translate a remaining component: add `const t = useTranslations('<namespace>')` (or `getTranslations` in Server Components), replace literals with `t('key')`, and add the key to **both** message files — the parity test fails otherwise.
+
+## Backend (Supabase)
+
+The full backend specification lives in [`docs/BACKEND_REQUIREMENTS.md`](docs/BACKEND_REQUIREMENTS.md) (Arabic).
+Quick start:
+
+```bash
+cp .env.example .env.local        # fill NEXT_PUBLIC_SUPABASE_* + SUPABASE_SERVICE_ROLE_KEY
+supabase link --project-ref <ref> # once
+npm run db:push                   # apply supabase/migrations/*.sql
+npm run db:seed                   # load fixtures + Arabic catalog translations
+NOIRE_DATA_SOURCE=supabase npm run dev
+```
+
+| Command            | Purpose                                                   |
+| ------------------ | --------------------------------------------------------- |
+| `npm run db:push`  | Apply migrations to the linked project                    |
+| `npm run db:reset` | Recreate the local database (`supabase start`) from migrations |
+| `npm run db:seed`  | Upsert fixtures into Supabase (idempotent)                |
+| `npm run db:types` | Regenerate `types/supabase.ts` from the live schema       |
+
+- `NOIRE_DATA_SOURCE=mock` (default) keeps the app on in-memory fixtures; `supabase` switches catalog reads to Postgres via `lib/services/supabase/`.
+- When Supabase credentials are present, `middleware.ts` requires a session for `/account` and the `staff`/`admin` role for `/admin`. Without them the app runs in preview mode and **`/admin` stays unprotected**.
+- Orders are created only through the `place_order()` RPC (server-side pricing, inventory, discounts, idempotency). Payments (Stripe) are phase 2.
 
 ## Known limitations
 

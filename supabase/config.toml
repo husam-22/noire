@@ -1,0 +1,53 @@
+# Supabase CLI configuration (local development with `supabase start`).
+# Project ref for the hosted project comes from `supabase link --project-ref <ref>`.
+project_id = "noire"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+major_version = 15
+
+[studio]
+enabled = true
+port = 54323
+
+[auth]
+enabled = true
+# Must match NEXT_PUBLIC_SITE_URL; add the Vercel preview/production URLs in the dashboard.
+site_url = "http://localhost:3000"
+additional_redirect_urls = [
+  "http://localhost:3000/api/auth/callback",
+  "https://noire-mu-eight.vercel.app/api/auth/callback",
+  "https://*-hu1300husam-ops.vercel.app/api/auth/callback",
+]
+jwt_expiry = 3600
+enable_refresh_token_rotation = true
+refresh_token_reuse_interval = 10
+enable_signup = true
+
+[auth.email]
+enable_signup = true
+double_confirm_changes = true
+enable_confirmations = true
+
+# Enable in the dashboard once the Google OAuth client exists.
+[auth.external.google]
+enabled = false
+client_id = "env(SUPABASE_AUTH_GOOGLE_CLIENT_ID)"
+secret = "env(SUPABASE_AUTH_GOOGLE_SECRET)"
+redirect_uri = ""
+
+[storage]
+enabled = true
+file_size_limit = "10MiB"
+
+[storage.buckets.product-media]
+public = true
+file_size_limit = "10MiB"
+allowed_mime_types = ["image/jpeg", "image/png", "image/webp", "image/avif"]
