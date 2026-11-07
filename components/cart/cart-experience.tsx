@@ -23,7 +23,7 @@ import {
   Lock,
   Info,
 } from 'lucide-react';
-import type { Product, Discount } from '@/types';
+import type { Product } from '@/types';
 import {
   useCommerce,
   FREE_SHIPPING_THRESHOLD,
@@ -43,13 +43,9 @@ import { CartSkeleton } from './cart-skeleton';
 
 export interface CartExperienceProps {
   allProducts: Product[];
-  availableDiscounts: Discount[];
 }
 
-export function CartExperience({
-  allProducts,
-  availableDiscounts,
-}: CartExperienceProps) {
+export function CartExperience({ allProducts }: CartExperienceProps) {
   const prefersReducedMotion = useReducedMotion();
   const {
     cart,
@@ -202,24 +198,6 @@ export function CartExperience({
     }
   };
 
-  const handleQuickApplyPromo = async (code: string) => {
-    setPromoInput(code);
-    setIsApplyingPromo(true);
-    setPromoFeedback(null);
-    try {
-      const res = await applyDiscountCode(code);
-      setPromoFeedback({
-        type: res.valid ? 'success' : 'error',
-        message: res.message,
-      });
-      if (res.valid) {
-        setPromoInput('');
-      }
-    } finally {
-      setIsApplyingPromo(false);
-    }
-  };
-
   const handleLoadSampleCommission = () => {
     const aether = allProducts.find((p) => p.slug === 'aether-01-headphones');
     const solis = allProducts.find((p) => p.slug === 'solis-cantilever-lamp');
@@ -279,18 +257,18 @@ export function CartExperience({
               aria-hidden="true"
             />
             <span aria-current="page" className="font-medium text-foreground">
-              Allocation Bag
+              Bag
             </span>
           </nav>
 
           <div className="hidden items-center gap-4 font-mono text-[10px] uppercase tracking-[0.14em] text-foreground-subtle md:flex">
-            <span>MANIFEST // NR-BAG-2026</span>
+            <span>NOIRÉ // BAG</span>
             <span className="text-border-strong">·</span>
             <span>
               ACTIVE UNITS: [{String(cartCount).padStart(2, '0')}]
             </span>
             <span className="text-border-strong">·</span>
-            <span>DISPATCH // NOT CONNECTED</span>
+            <span>SECURE CHECKOUT</span>
           </div>
         </Container>
       </div>
@@ -310,12 +288,11 @@ export function CartExperience({
                 </span>
               </div>
               <h1 className="font-display text-display-md tracking-tight text-foreground">
-                Allocation Dossier
+                Your Bag
               </h1>
               <p className="max-w-2xl font-sans text-body-md leading-relaxed text-foreground-muted">
-                Review your serialized hardware configurations and finish
-                specifications before saving a browser-local demo allocation.
-                No payment, delivery, or courier service is connected.
+                Review your configurations and finishes, then continue to checkout.
+                Pay in cash on delivery or by bank transfer.
               </p>
             </div>
 
@@ -350,7 +327,7 @@ export function CartExperience({
             </div>
           </div>
 
-          {/* Demo Courier Estimate Threshold Bar */}
+          {/* Free delivery threshold */}
           <div className="mb-10 border border-border bg-surface p-4 sm:p-5">
             <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2.5">
@@ -366,12 +343,12 @@ export function CartExperience({
                 <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-foreground">
                   {cartSubtotal === 0 ? (
                     <>
-                      DEMO COURIER ESTIMATE THRESHOLD ABOVE{' '}
+                      FREE DELIVERY ON ORDERS ABOVE{' '}
                       {formatPrice(FREE_SHIPPING_THRESHOLD)}
                     </>
                   ) : amountUntilFreeShipping === 0 ? (
                     <>
-                      DEMO COURIER ESTIMATE INCLUDED {'//'} NO BOOKING OR FULFILLMENT
+                      FREE DELIVERY UNLOCKED
                     </>
                   ) : (
                     <>
@@ -379,7 +356,7 @@ export function CartExperience({
                       <span className="font-semibold text-accent">
                         {formatPrice(amountUntilFreeShipping)}
                       </span>{' '}
-                      MORE TO REACH THE DEMO COURIER ESTIMATE THRESHOLD
+                      MORE FOR FREE DELIVERY
                     </>
                   )}
                 </span>
@@ -396,7 +373,7 @@ export function CartExperience({
               aria-valuenow={freeShippingProgress}
               aria-valuemin={0}
               aria-valuemax={100}
-              aria-label="Demo courier estimate threshold progress"
+              aria-label="Free delivery progress"
               className="h-1.5 w-full overflow-hidden bg-surface-muted"
             >
               <div
@@ -415,9 +392,9 @@ export function CartExperience({
           {cart.length === 0 ? (
             <div className="space-y-14">
               <EmptyState
-                code="MANIFEST // 00 ACTIVE UNITS"
-                title="Your Allocation Bag is Empty"
-                description="No serialized instruments are currently assigned to your commission manifest. Explore the complete archive of acoustic instruments, architectural lighting, and tactile hardware, or allocate directly from your saved archive below."
+                code="BAG // 00 ITEMS"
+                title="Your bag is empty"
+                description="Explore the full collection of audio, lighting and desk hardware, or add something from your saved items below."
                 icon={<ShoppingBag className="h-5 w-5" />}
                 primaryAction={
                   <Link
@@ -455,7 +432,7 @@ export function CartExperience({
                   <div className="mb-6 flex flex-wrap items-end justify-between gap-4 border-b border-border pb-4">
                     <div>
                       <Eyebrow index="ARCHIVE" tone="accent">
-                        SAVED FOR LATER // IMMEDIATE ALLOCATION
+                        SAVED FOR LATER
                       </Eyebrow>
                       <h2 className="mt-1 font-display text-h3 text-foreground">
                         Saved in Your Wishlist Archive (
@@ -538,7 +515,7 @@ export function CartExperience({
                     01 // INSTRUMENT &amp; CONFIGURATION
                   </div>
                   <div className="col-span-3 text-center">
-                    02 // QUANTITY ALLOCATION
+                    02 // QUANTITY
                   </div>
                   <div className="col-span-2 text-end">
                     03 // LINE VALUATION
@@ -780,7 +757,7 @@ export function CartExperience({
                         </h2>
                       </div>
                       <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-foreground-subtle">
-                        AVAILABLE FOR IMMEDIATE RE-ALLOCATION
+                        AVAILABLE TO ADD BACK
                       </span>
                     </div>
 
@@ -853,7 +830,7 @@ export function CartExperience({
                         02 // FINANCIAL LEDGER
                       </span>
                       <h2 className="mt-1 font-display text-h3 text-foreground">
-                        Allocation Summary
+                        Order Summary
                       </h2>
                     </div>
                     <span className="border border-border bg-surface-muted px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.14em] text-foreground">
@@ -872,7 +849,7 @@ export function CartExperience({
                           className="h-3.5 w-3.5 text-accent"
                           aria-hidden="true"
                         />
-                        <span>Allocation / Privilege Code</span>
+                        <span>Discount Code</span>
                       </label>
                       <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-foreground-subtle">
                         OPTIONAL
@@ -888,7 +865,7 @@ export function CartExperience({
                           setPromoInput(e.target.value.toUpperCase())
                         }
                         placeholder="E.G. EDITION04"
-                        aria-label="Allocation or privilege code"
+                        aria-label="Discount code"
                         className="h-10 flex-1 border border-border bg-background px-3 font-mono text-xs uppercase tracking-[0.12em] text-foreground placeholder:text-foreground-subtle focus:border-foreground focus:outline-none"
                       />
                       <button
@@ -927,7 +904,7 @@ export function CartExperience({
                             removeDiscountCode();
                             setPromoFeedback(null);
                           }}
-                          aria-label={`Remove ${appliedDiscount.code} privilege code`}
+                          aria-label={`Remove discount code ${appliedDiscount.code}`}
                           className="p-1 text-foreground-subtle transition-colors hover:text-danger"
                         >
                           <X className="h-3.5 w-3.5" />
@@ -953,31 +930,6 @@ export function CartExperience({
                         <span>{promoFeedback.message}</span>
                       </div>
                     )}
-
-                    {/* Quick-Select Active Privilege Codes for Instant Testing */}
-                    {availableDiscounts.length > 0 && !appliedDiscount && (
-                      <div className="mt-3 space-y-1.5">
-                        <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-foreground-subtle">
-                          ACTIVE STUDIO PRIVILEGES:
-                        </p>
-                        <div className="flex flex-wrap gap-1.5">
-                          {availableDiscounts.map((disc) => (
-                            <button
-                              key={disc.id}
-                              type="button"
-                              onClick={() => handleQuickApplyPromo(disc.code)}
-                              className="border border-border bg-background px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.12em] text-foreground-muted transition-colors hover:border-foreground hover:text-foreground"
-                            >
-                              {disc.code} (
-                              {disc.type === 'percentage'
-                                ? `${disc.value}% OFF`
-                                : `$${disc.value} CREDIT`}
-                              )
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
                   </div>
 
                   {/* Line-by-Line Cost Breakdown */}
@@ -995,7 +947,7 @@ export function CartExperience({
                     {appliedDiscount && discountAmount > 0 && (
                       <div className="flex items-center justify-between text-accent">
                         <dt className="font-mono text-xs uppercase tracking-[0.12em]">
-                          Privilege ({appliedDiscount.code})
+                          Discount ({appliedDiscount.code})
                         </dt>
                         <dd className="font-mono text-sm tabular-nums">
                           -{formatPrice(discountAmount)}
@@ -1005,7 +957,7 @@ export function CartExperience({
 
                     <div className="flex items-center justify-between">
                       <dt className="text-foreground-muted">
-                        Courier Estimate // Demo Only
+                        Delivery
                       </dt>
                       <dd className="font-mono text-xs uppercase tracking-[0.12em] text-foreground">
                         {shippingEstimateCost === 0 ? (
@@ -1020,27 +972,27 @@ export function CartExperience({
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between">
                         <dt className="flex items-center gap-1.5 text-foreground-muted">
-                          <span>Estimated Duties &amp; Tax</span>
+                          <span>Tax</span>
                           <button
                             type="button"
                             onClick={() =>
                               setShowTaxTelemetryNote((prev) => !prev)
                             }
                             aria-expanded={showTaxTelemetryNote}
-                            aria-label="Toggle tax calculation architecture details"
+                            aria-label="About taxes and duties"
                             className="text-foreground-subtle transition-colors hover:text-foreground"
                           >
                             <Info className="h-3.5 w-3.5" />
                           </button>
                         </dt>
                         <dd className="font-mono text-[11px] uppercase tracking-[0.12em] text-foreground-subtle">
-                          AT DISPATCH ADDRESS
+                          INCLUDED
                         </dd>
                       </div>
 
                       {showTaxTelemetryNote && (
                         <p className="border-s-2 border-border bg-surface-muted p-2.5 font-mono text-[10px] leading-relaxed text-foreground-muted">
-                          Tax calculation is not connected. The demo keeps tax pending; production totals require a jurisdiction-aware tax service.
+                          Prices include applicable taxes. Import duties, where they apply, are settled by the recipient on delivery.
                         </p>
                       )}
                     </div>
@@ -1050,10 +1002,10 @@ export function CartExperience({
                   <div className="my-6 flex items-baseline justify-between">
                     <div>
                       <span className="block font-mono text-xs uppercase tracking-[0.14em] text-foreground">
-                        Estimated Total
+                        Total
                       </span>
                       <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-foreground-subtle">
-                        USD // PAYMENT PENDING
+                        USD // PAY ON DELIVERY OR BY TRANSFER
                       </span>
                     </div>
                     <PriceDisplay price={cartTotal} size="xl" />
@@ -1094,9 +1046,9 @@ export function CartExperience({
                       />
                       <span>
                         <strong className="font-medium text-foreground">
-                          Illustrative warranty program:
+                          Warranty:
                         </strong>{' '}
-                        Warranty details are illustrative; no service booking is connected in this preview.
+                        Every product is covered by the manufacturer warranty stated on its page.
                       </span>
                     </div>
                     <div className="flex items-start gap-2.5 text-caption text-foreground-muted">
@@ -1106,9 +1058,9 @@ export function CartExperience({
                       />
                       <span>
                         <strong className="font-medium text-foreground">
-                          Illustrative return program:
+                          Returns:
                         </strong>{' '}
-                        Return and courier terms are illustrative only; no return or courier service is connected.
+                        Unused items in original packaging can be returned within 14 days of delivery.
                       </span>
                     </div>
                     <div className="flex items-start gap-2.5 text-caption text-foreground-muted">
@@ -1118,9 +1070,9 @@ export function CartExperience({
                       />
                       <span>
                         <strong className="font-medium text-foreground">
-                          Demo settlement boundary:
+                          Payment:
                         </strong>{' '}
-                        Demo payment preview only; no provider, live payment method, or charge is connected.
+                        No card details are collected online. Pay the courier on delivery or by bank transfer after our team confirms your order.
                       </span>
                     </div>
                   </div>

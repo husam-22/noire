@@ -16,7 +16,7 @@ export default function AccountOrderError({
         <ErrorState
           code="ERR // ORDER-DOSSIER-500"
           title="The order dossier could not be loaded."
-          description="The browser-local order record could not be resolved. No server order lookup or payment operation was attempted. Retry, or return to the private client atelier."
+          description="This order could not be loaded. Nothing has been changed — retry, or return to your account."
           retryLabel="Retry dossier"
           onRetry={reset}
           secondaryAction={

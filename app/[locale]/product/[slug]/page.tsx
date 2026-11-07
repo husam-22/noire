@@ -2,8 +2,6 @@ import React from 'react';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { setRequestLocale } from 'next-intl/server';
-import { routing } from '@/i18n/routing';
-import { getProducts as getBaseProducts } from '@/lib/mock-api';
 import {
   getProductBySlug,
   getRelatedProducts,
@@ -33,20 +31,15 @@ interface ProductDetailPageProps {
   };
 }
 
-export async function generateStaticParams() {
-  // Runs outside a request scope: use the raw (non-localized) catalog read and
-  // emit one entry per locale so every dossier is pre-rendered in both languages.
-  const response = await getBaseProducts({ limit: 50 }, 0);
-  return routing.locales.flatMap((locale) =>
-    response.items.map((product) => ({ locale, slug: product.slug }))
-  );
-}
+// Product pages are rendered on demand from the database so catalog edits in
+// the admin area are visible immediately (revalidated by the admin actions).
+export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({
   params,
 }: ProductDetailPageProps): Promise<Metadata> {
   setRequestLocale(params.locale);
-  const product = await getProductBySlug(params.slug, 0);
+  const product = await getProductBySlug(params.slug);
 
   if (!product) {
     return {
@@ -83,7 +76,7 @@ export default async function NoireProductDetailPage({
   params,
 }: ProductDetailPageProps) {
   setRequestLocale(params.locale);
-  const product = await getProductBySlug(params.slug, 0);
+  const product = await getProductBySlug(params.slug);
 
   if (!product) {
     notFound();
@@ -98,13 +91,13 @@ export default async function NoireProductDetailPage({
     reviews,
     allProductsResponse,
   ] = await Promise.all([
-    getCategories(0),
-    getCollections(0),
-    getFeaturedProducts(4, 0),
-    getSpotlightProduct(0),
-    getRelatedProducts(product.id, 3, 0),
-    getReviewsByProductId(product.id, 0),
-    getProducts({ limit: 50 }, 0),
+    getCategories(),
+    getCollections(),
+    getFeaturedProducts(4),
+    getSpotlightProduct(),
+    getRelatedProducts(product.id, 3),
+    getReviewsByProductId(product.id),
+    getProducts({ limit: 50 }),
   ]);
 
   const productCollections = collections.filter(
@@ -113,7 +106,7 @@ export default async function NoireProductDetailPage({
       col.productIds.includes(product.id)
   );
 
-  // Public product metadata only. Demo inventory and unverified review data are omitted.
+  // Public product metadata only; inventory and review data are omitted.
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Product',

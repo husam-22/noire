@@ -106,7 +106,7 @@ export const STOCK_STATUS_OPTIONS: Array<{
 }> = [
   {
     value: 'in_stock',
-    label: 'In Stock — Demo Catalog',
+    label: 'In Stock',
     code: 'IMM',
   },
   {

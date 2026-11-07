@@ -6,8 +6,6 @@
  * inlined by Next.js at build time and therefore must be referenced literally.
  */
 
-export type DataSource = 'mock' | 'supabase';
-
 function readPublic(name: string, value: string | undefined): string | undefined {
   const trimmed = value?.trim();
   return trimmed && trimmed.length > 0 ? trimmed : undefined;
@@ -24,21 +22,16 @@ export function hasSupabasePublicConfig(): boolean {
   return Boolean(publicEnv.supabaseUrl && publicEnv.supabaseAnonKey);
 }
 
-/** Which adapter the service layer should use. Falls back to fixtures when Supabase is not configured. */
-export function getDataSource(): DataSource {
-  const requested = (process.env.NOIRE_DATA_SOURCE ?? 'mock').trim().toLowerCase();
-  if (requested === 'supabase') {
-    if (!hasSupabasePublicConfig()) {
-      if (process.env.NODE_ENV !== 'test') {
-        console.warn(
-          '[noire/env] NOIRE_DATA_SOURCE=supabase but NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY are missing — falling back to mock data.'
-        );
-      }
-      return 'mock';
-    }
-    return 'supabase';
+/**
+ * Supabase is the only data source. This throws at request time with a clear
+ * message instead of letting a misconfigured deployment render a broken page.
+ */
+export function assertSupabaseConfigured(): void {
+  if (!hasSupabasePublicConfig()) {
+    throw new Error(
+      '[noire/env] NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are required. See README → Backend.'
+    );
   }
-  return 'mock';
 }
 
 /** Server-only secrets. Throws when called from the browser bundle or when a key is absent. */

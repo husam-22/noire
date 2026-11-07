@@ -4,21 +4,10 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from '@/i18n/navigation';
 import { ArrowUpRight, Search } from 'lucide-react';
 import { Modal, Input, Badge, Skeleton, ErrorState, EmptyState } from '@/components/ui';
-import { loadAdminProducts } from '@/lib/admin/actions';
-import { browserDemoDiscountService } from '@/lib/admin/browser-discount-service';
-import { useCommerce } from '@/lib/context/commerce-context';
-import { deriveGuestClientLedger } from '@/lib/admin/derive';
-import type { Discount, Product } from '@/types';
-import { formatPrice } from '@/lib/utils';
-import { orderStatusLabel } from '@/lib/account/order-utils';
+import { searchAdminRecords } from '@/lib/admin/actions';
+import type { AdminSearchHit } from '@/lib/services/supabase/admin';
 
-interface CommandHit {
-  id: string;
-  label: string;
-  detail: string;
-  kind: 'Order' | 'Product' | 'Guest contact' | 'Discount';
-  href: string;
-}
+const SEARCH_DEBOUNCE_MS = 220;
 
 export function AdminCommandPalette({
   isOpen,
@@ -28,97 +17,59 @@ export function AdminCommandPalette({
   onClose: () => void;
 }) {
   const router = useRouter();
-  const { placedOrders, isCartHydrated } = useCommerce();
   const [query, setQuery] = useState('');
-  const [products, setProducts] = useState<Product[]>([]);
-  const [discounts, setDiscounts] = useState<Discount[]>([]);
+  const [hits, setHits] = useState<AdminSearchHit[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const requestRef = useRef(0);
 
-  const loadSearchData = useCallback(async () => {
+  const trimmedQuery = useMemo(() => query.trim(), [query]);
+
+  const runSearch = useCallback(async (value: string) => {
+    const requestId = ++requestRef.current;
+    if (value.length < 2) {
+      setHits([]);
+      setIsLoading(false);
+      setLoadError(null);
+      return;
+    }
     setIsLoading(true);
     setLoadError(null);
-    try {
-      const [nextProducts, nextDiscounts] = await Promise.all([
-        loadAdminProducts(),
-        browserDemoDiscountService.getDiscounts(),
-      ]);
-      setProducts(nextProducts);
-      setDiscounts(nextDiscounts);
-    } catch (error) {
-      setLoadError(error instanceof Error ? error.message : 'Local search data could not be loaded.');
-    } finally {
-      setIsLoading(false);
+    const result = await searchAdminRecords(value);
+    if (requestId !== requestRef.current) return;
+    setIsLoading(false);
+    if (!result.ok) {
+      setLoadError(result.error);
+      setHits([]);
+      return;
     }
+    setHits(result.data);
+    setActiveIndex(0);
   }, []);
 
   useEffect(() => {
     if (!isOpen) {
       setQuery('');
+      setHits([]);
       setActiveIndex(0);
+      setLoadError(null);
       return;
     }
-    void loadSearchData();
-  }, [isOpen, loadSearchData]);
-
-  useEffect(() => {
-    if (!isOpen) return;
     const timer = window.setTimeout(() => {
       searchInputRef.current?.focus({ preventScroll: true });
     }, 50);
     return () => window.clearTimeout(timer);
   }, [isOpen]);
 
-  const hits = useMemo<CommandHit[]>(() => {
-    const trimmed = query.trim().toLowerCase();
-    if (!trimmed) return [];
-    const matches = (value: string) => value.toLowerCase().includes(trimmed);
-    const orderHits: CommandHit[] = placedOrders
-      .filter((order) => [order.orderNumber, order.id, order.customerName, order.customerEmail]
-        .some((value) => matches(value || '')))
-      .map((order) => ({
-        id: `order-${order.id}`,
-        label: order.orderNumber,
-        detail: `${order.customerName || 'Guest contact'} · ${formatPrice(order.total)} · ${orderStatusLabel(order.status)}`, 
-        kind: 'Order',
-        href: `/admin/orders/${encodeURIComponent(order.id)}`,
-      }));
-    const productHits: CommandHit[] = products
-      .filter((product) => [product.name, product.sku, product.modelNumber, product.slug]
-        .some((value) => matches(value || '')))
-      .map((product) => ({
-        id: `product-${product.id}`,
-        label: product.name,
-        detail: `${product.modelNumber} · ${product.status} · ${formatPrice(product.price)}`,
-        kind: 'Product',
-        href: `/admin/products/${encodeURIComponent(product.id)}`,
-      }));
-    const customerHits: CommandHit[] = deriveGuestClientLedger(placedOrders)
-      .filter((entry) => [entry.name, entry.email ?? '', entry.id]
-        .some((value) => matches(value)))
-      .map((entry) => ({
-        id: `guest-${entry.id}`,
-        label: entry.name,
-        detail: `${entry.email || 'Email not recorded'} · GUEST // ${entry.orderCount} local order${entry.orderCount === 1 ? '' : 's'}`,
-        kind: 'Guest contact',
-        href: `/admin/customers/${encodeURIComponent(entry.id)}`,
-      }));
-    const discountHits: CommandHit[] = discounts
-      .filter((discount) => [discount.code, discount.description]
-        .some((value) => matches(value || '')))
-      .map((discount) => ({
-        id: `discount-${discount.id}`,
-        label: discount.code,
-        detail: `${discount.type.replace('_', ' ')} · ${discount.status} · DEMO CODE`,
-        kind: 'Discount',
-        href: '/admin/discounts',
-      }));
-    return [...orderHits, ...productHits, ...customerHits, ...discountHits].slice(0, 30);
-  }, [discounts, placedOrders, products, query]);
+  useEffect(() => {
+    if (!isOpen) return;
+    const timer = window.setTimeout(() => { void runSearch(trimmedQuery); }, SEARCH_DEBOUNCE_MS);
+    return () => window.clearTimeout(timer);
+  }, [isOpen, runSearch, trimmedQuery]);
 
-  const openHit = useCallback((hit: CommandHit) => {
+  const openHit = useCallback((hit: AdminSearchHit) => {
     onClose();
     router.push(hit.href);
   }, [onClose, router]);
@@ -140,8 +91,8 @@ export function AdminCommandPalette({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Command Search"
-      code="⌘K / CTRL+K // LOCAL RECORDS ONLY"
+      title="Search"
+      code="⌘K / CTRL+K"
       size="lg"
       className="max-h-[88vh]"
     >
@@ -149,8 +100,8 @@ export function AdminCommandPalette({
         <Input
           ref={searchInputRef}
           type="search"
-          label="Search command records"
-          placeholder="Order number, product, guest contact, discount code…"
+          label="Search orders, products, customers and discounts"
+          placeholder="Order number, product name or SKU, customer email, discount code…"
           value={query}
           onChange={(event) => {
             setQuery(event.target.value);
@@ -160,19 +111,15 @@ export function AdminCommandPalette({
           leftElement={<Search className="h-4 w-4" aria-hidden="true" />}
           role="combobox"
           aria-autocomplete="list"
-          aria-expanded={query.trim().length > 0}
+          aria-expanded={trimmedQuery.length > 0}
           aria-controls="admin-command-results"
           aria-activedescendant={hits[activeIndex] ? `command-result-${activeIndex}` : undefined}
           autoComplete="off"
         />
-        <div className="flex flex-wrap items-center justify-between gap-2 font-mono text-[9px] uppercase tracking-[0.12em] text-foreground-subtle">
-          <span>Orders // browser-local CommerceContext</span>
-          <span>Catalog // server demo · codes // browser memory</span>
-        </div>
 
         {isLoading && (
           <div role="status" aria-live="polite" className="space-y-3 border-y border-border py-4">
-            <span className="sr-only">Loading command search index</span>
+            <span className="sr-only">Searching</span>
             <Skeleton className="h-11 w-full" />
             <Skeleton className="h-11 w-full" />
             <Skeleton className="h-11 w-full" />
@@ -180,31 +127,31 @@ export function AdminCommandPalette({
         )}
         {!isLoading && loadError && (
           <ErrorState
-            code="ERR // LOCAL SEARCH INDEX"
-            title="Search records unavailable"
+            code="ERR // SEARCH"
+            title="Search is unavailable"
             description={loadError}
-            onRetry={() => void loadSearchData()}
-            retryLabel="Retry index"
+            onRetry={() => void runSearch(trimmedQuery)}
+            retryLabel="Try again"
             className="p-4 sm:p-5"
           />
         )}
-        {!isLoading && !loadError && query.trim().length === 0 && (
+        {!isLoading && !loadError && trimmedQuery.length < 2 && (
           <div className="border-y border-border py-8 text-center">
-            <p className="font-display text-lg text-foreground">Find an operational record.</p>
-            <p className="mt-2 text-small text-foreground-muted">Orders are read only from this browser. No seeded customer or order archive is searched.</p>
+            <p className="font-display text-lg text-foreground">Find anything in the store.</p>
+            <p className="mt-2 text-small text-foreground-muted">Type at least two characters to search orders, products, customers and discount codes.</p>
             <p className="mt-4 font-mono text-[9px] uppercase tracking-[0.12em] text-foreground-subtle">↑ ↓ Navigate · Enter Open · Esc Close</p>
           </div>
         )}
-        {!isLoading && !loadError && query.trim().length > 0 && hits.length === 0 && (
+        {!isLoading && !loadError && trimmedQuery.length >= 2 && hits.length === 0 && (
           <EmptyState
             code="SEARCH // 00 MATCHES"
-            title="No local records found."
-            description={isCartHydrated ? 'Try another order number, product identifier, guest contact, or discount code.' : 'The browser-local order archive is still loading. Try again in a moment.'}
+            title="Nothing matched."
+            description="Try another order number, product identifier, customer email, or discount code."
             className="p-5"
           />
         )}
         {!isLoading && !loadError && hits.length > 0 && (
-          <div id="admin-command-results" role="listbox" aria-label="Command search results" className="max-h-[45vh] overflow-y-auto border-y border-border">
+          <div id="admin-command-results" role="listbox" aria-label="Search results" className="max-h-[45vh] overflow-y-auto border-y border-border">
             {hits.map((hit, index) => (
               <button
                 key={hit.id}

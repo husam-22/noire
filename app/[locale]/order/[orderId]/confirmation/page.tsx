@@ -5,19 +5,17 @@ import {
   getCollections,
   getFeaturedProducts,
   getSpotlightProduct,
-  getOrderById,
+  getOrderReceipt,
 } from '@/lib/services/localized';
 import { GlobalHeader, GlobalFooter } from '@/components/navigation';
 import { QuickViewModal } from '@/components/product';
 import { OrderConfirmationExperience } from '@/components/checkout';
-import type { Order } from '@/types';
 
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Allocation Record | NOIRÉ',
-  description:
-    'A browser-local NOIRÉ demonstration order record with pending settlement and no fulfillment event.',
+  title: 'Order Confirmation | NOIRÉ',
+  description: 'Your NOIRÉ order summary, payment instructions and delivery details.',
   robots: { index: false, follow: false },
 };
 
@@ -28,13 +26,13 @@ interface OrderConfirmationPageProps {
 export default async function NoireOrderConfirmationPage({
   params,
 }: OrderConfirmationPageProps) {
-  const [categories, collections, featuredProducts, spotlightProduct, initialOrder] =
+  const [categories, collections, featuredProducts, spotlightProduct, order] =
     await Promise.all([
-      getCategories(0),
-      getCollections(0),
-      getFeaturedProducts(4, 0),
-      getSpotlightProduct(0),
-      getOrderById(params.orderId, 0),
+      getCategories(),
+      getCollections(),
+      getFeaturedProducts(4),
+      getSpotlightProduct(),
+      getOrderReceipt(params.orderId).catch(() => null),
     ]);
 
   return (
@@ -46,10 +44,7 @@ export default async function NoireOrderConfirmationPage({
         spotlightProduct={spotlightProduct}
         allowTransparentTop={false}
       />
-      <OrderConfirmationExperience
-        orderId={params.orderId}
-        initialOrder={initialOrder as Order | null}
-      />
+      <OrderConfirmationExperience order={order} />
       <GlobalFooter categories={categories} collections={collections} />
       <QuickViewModal />
     </div>

@@ -29,10 +29,10 @@ export default async function SignInPage({
   }
 
   const [categories, collections, featuredProducts, spotlightProduct, t] = await Promise.all([
-    getCategories(0),
-    getCollections(0),
-    getFeaturedProducts(4, 0),
-    getSpotlightProduct(0),
+    getCategories(),
+    getCollections(),
+    getFeaturedProducts(4),
+    getSpotlightProduct(),
     getTranslations('auth'),
   ]);
 

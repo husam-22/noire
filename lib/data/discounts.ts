@@ -5,7 +5,7 @@ export const MOCK_DISCOUNTS: Discount[] = [
   {
     id: 'disc-01',
     code: 'EDITION04',
-    description: 'Demonstration 10% allocation code',
+    description: '10% off Edition 04 allocations',
     type: 'percentage',
     value: 10,
     minOrderAmount: 500,
@@ -17,7 +17,7 @@ export const MOCK_DISCOUNTS: Discount[] = [
   {
     id: 'disc-02',
     code: 'ARCHITECT150',
-    description: 'Demonstration $150 studio code',
+    description: '$150 off orders over the studio minimum',
     type: 'fixed_amount',
     value: 150,
     minOrderAmount: 1200,

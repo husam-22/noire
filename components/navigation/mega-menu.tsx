@@ -23,7 +23,7 @@ export interface MegaMenuProps {
   onClose: () => void;
   categories: Category[];
   collections: Collection[];
-  spotlightProduct: Product;
+  spotlightProduct: Product | null;
 }
 
 export function MegaMenu({
@@ -314,6 +314,7 @@ export function MegaMenu({
                   </div>
 
                   {/* Column 9–12: Flagship Spotlight Instrument */}
+                  {spotlightProduct && (
                   <div className="col-span-4 flex flex-col justify-between">
                     <div className="flex items-center justify-between border-b border-border pb-3">
                       <TechnicalCode>
@@ -378,6 +379,7 @@ export function MegaMenu({
                       </div>
                     </div>
                   </div>
+                  )}
                 </div>
               )}
 

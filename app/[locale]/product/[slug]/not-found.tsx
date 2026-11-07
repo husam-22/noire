@@ -1,26 +1,25 @@
 import React from 'react';
 import { Link } from '@/i18n/navigation';
 import { Compass, ArrowUpRight } from 'lucide-react';
-import {
-  MOCK_CATEGORIES,
-  MOCK_COLLECTIONS,
-  MOCK_PRODUCTS,
-} from '@/lib/data';
+import { getCategories, getCollections, getFeaturedProducts, getSpotlightProduct } from '@/lib/services/localized';
 import { Container, Section } from '@/components/layout';
 import { EmptyState, Eyebrow } from '@/components/ui';
 import { GlobalHeader, GlobalFooter } from '@/components/navigation';
 import { ProductCard, QuickViewModal } from '@/components/product';
 
-export default function ProductNotFound() {
-  const featuredProducts = MOCK_PRODUCTS.filter((p) => p.featured).slice(0, 3);
-  const spotlightProduct =
-    MOCK_PRODUCTS.find((p) => p.isSpotlight) ?? MOCK_PRODUCTS[0];
+export default async function ProductNotFound() {
+  const [categories, collections, featuredProducts, spotlightProduct] = await Promise.all([
+    getCategories().catch(() => []),
+    getCollections().catch(() => []),
+    getFeaturedProducts(3).catch(() => []),
+    getSpotlightProduct().catch(() => null),
+  ]);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
       <GlobalHeader
-        categories={MOCK_CATEGORIES}
-        collections={MOCK_COLLECTIONS}
+        categories={categories}
+        collections={collections}
         featuredProducts={featuredProducts}
         spotlightProduct={spotlightProduct}
         allowTransparentTop={false}
@@ -32,7 +31,7 @@ export default function ProductNotFound() {
             <EmptyState
               code="ERR // 404 — SERIAL NUMBER UNRECOGNIZED"
               title="Requested Instrument Dossier Not Found"
-              description="The instrument slug or serial reference you entered does not correspond to an active object in the NOIRÉ archive. It may have been retired to the permanent museum collection or mistyped."
+              description="The product you are looking for is not in the current catalog. It may have been retired or the link may be mistyped."
               icon={<Compass className="h-5 w-5" />}
               primaryAction={
                 <Link
@@ -80,10 +79,7 @@ export default function ProductNotFound() {
         </Section>
       </main>
 
-      <GlobalFooter
-        categories={MOCK_CATEGORIES}
-        collections={MOCK_COLLECTIONS}
-      />
+      <GlobalFooter categories={categories} collections={collections} />
       <QuickViewModal />
     </div>
   );

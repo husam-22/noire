@@ -13,10 +13,10 @@ export default function AdminError({
     <main id="main-content" className="min-w-0">
       <ErrorState
         code="ERR // COMMAND CENTER"
-        title="The local operations workspace could not be rendered."
-        description={error.message || 'An unexpected local error interrupted this admin preview.'}
+        title="The Command Center could not be rendered."
+        description={error.message || 'An unexpected error interrupted the admin workspace.'}
         onRetry={reset}
-        retryLabel="Retry workspace"
+        retryLabel="Try again"
       />
     </main>
   );

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { MOCK_CATEGORIES, MOCK_COLLECTIONS, MOCK_PRODUCTS } from '@/lib/data';
-import { DEFAULT_SHIPPING_METHODS } from '@/lib/mock-api';
+import { MOCK_CATEGORIES, MOCK_COLLECTIONS, MOCK_PRODUCTS, SEED_SHIPPING_METHODS } from '@/lib/data';
+
 import {
   categoryIdForSlug,
   categoryToRow,
@@ -35,8 +35,8 @@ describe('supabase mappers — products', () => {
     for (const product of MOCK_PRODUCTS) {
       const mapped = mapProduct(viewRowFor(product));
       // Fields the DB owns differently are normalised; everything else must survive untouched.
-      const { categoryName: _cn, ...expected } = product;
-      const { categoryName: _mcn, ...actual } = mapped;
+      const expected = { ...product, categoryName: undefined };
+      const actual = { ...mapped, categoryName: undefined };
       expect(actual).toMatchObject({
         ...expected,
         options: product.options ?? [],
@@ -114,7 +114,7 @@ describe('supabase mappers — categories & collections', () => {
 
 describe('supabase mappers — shipping & enums', () => {
   it('round-trips shipping methods', () => {
-    for (const method of DEFAULT_SHIPPING_METHODS) {
+    for (const method of SEED_SHIPPING_METHODS) {
       const row = { ...shippingMethodToRow(method), countries: null } as Parameters<typeof mapShippingMethod>[0];
       expect(mapShippingMethod(row)).toMatchObject(method);
     }

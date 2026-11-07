@@ -68,8 +68,8 @@ export const DEFAULT_CHECKOUT_DRAFT: CheckoutDraft = {
   shippingAddress: EMPTY_ADDRESS,
   billingAddress: { ...EMPTY_ADDRESS },
   billingSameAsShipping: true,
-  selectedShippingMethodId: 'ship-demo-air',
-  paymentMethodType: 'card',
+  selectedShippingMethodId: '',
+  paymentMethodType: 'cash_on_delivery',
   activeSection: 'client',
   notes: '',
 };
@@ -137,10 +137,7 @@ export function sanitizeCheckoutDraft(value: unknown): CheckoutDraft {
     ? (savedSection as CheckoutSection)
     : DEFAULT_CHECKOUT_DRAFT.activeSection;
   const paymentMethodType: PaymentMethodType =
-    saved.paymentMethodType === 'apple_pay' ||
-    saved.paymentMethodType === 'wire_transfer'
-      ? saved.paymentMethodType
-      : 'card';
+    saved.paymentMethodType === 'bank_transfer' ? 'bank_transfer' : 'cash_on_delivery';
 
   return {
     customer: {

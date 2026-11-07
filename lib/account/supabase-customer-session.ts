@@ -2,27 +2,20 @@ import 'server-only';
 
 import type { CustomerSession } from '@/types';
 import type { CustomerSessionProvider } from './customer-session';
-import { previewCustomerSessionProvider } from './customer-session';
-import { hasSupabasePublicConfig } from '@/lib/env';
+import { GUEST_SESSION } from './customer-session';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
 
 /**
  * Supabase-backed implementation of the `CustomerSessionProvider` contract.
  * Resolves the signed-in user from the request cookies and joins their profile.
- * Falls back to the preview (guest) provider when Supabase is not configured,
- * so pages can import this provider unconditionally.
  */
 export const supabaseCustomerSessionProvider: CustomerSessionProvider = {
   async getSession(): Promise<CustomerSession> {
-    if (!hasSupabasePublicConfig()) {
-      return previewCustomerSessionProvider.getSession();
-    }
-
-    const { createSupabaseServerClient } = await import('@/lib/supabase/server');
     const supabase = createSupabaseServerClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    if (!user) return { status: 'guest', source: 'preview' };
+    if (!user) return GUEST_SESSION;
 
     const { data: profile } = await supabase
       .from('profiles')
@@ -46,5 +39,5 @@ export const supabaseCustomerSessionProvider: CustomerSessionProvider = {
   },
 };
 
-/** The provider the app should use: Supabase when configured, preview otherwise. */
+/** The provider the app uses everywhere. */
 export const customerSessionProvider: CustomerSessionProvider = supabaseCustomerSessionProvider;

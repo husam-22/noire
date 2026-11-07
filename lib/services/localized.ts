@@ -1,127 +1,76 @@
 /**
  * NOIRÉ — Locale-aware catalog reads for Server Components.
  *
- * Mirrors the `@/lib/services` surface but returns category / collection / product
- * copy translated for the active request locale. Mutations and non-catalog reads are
- * re-exported untouched.
- *
- * Data source is selected per request via `NOIRE_DATA_SOURCE`:
- *   • `mock`     → in-memory fixtures + `messages/<locale>.json → catalog.*` overrides
- *   • `supabase` → Postgres rows + `*_translations` tables (see supabase/migrations)
+ * Every read goes to Supabase (Postgres rows + `*_translations` tables) using
+ * the locale of the current request. Import from here in `app/**` pages; the
+ * underlying adapters live in `lib/services/supabase/*`.
  */
+import 'server-only';
+
 import { getLocale } from 'next-intl/server';
-import * as base from '@/lib/mock-api';
-import { getCatalogLocalizer } from '@/lib/i18n/catalog';
-import { getDataSource } from '@/lib/env';
 import { isAppLocale, type AppLocale } from '@/i18n/routing';
 import type { Product, ProductFilterParams, Review } from '@/types';
+import * as catalog from '@/lib/services/supabase/catalog';
 
-export * from '@/lib/mock-api';
-
-async function loadSupabaseCatalog() {
-  return import('@/lib/services/supabase/catalog');
-}
+export { getJournalArticles, getJournalArticleBySlug } from '@/lib/services/supabase/journal';
+export { getStorefrontContent } from '@/lib/services/supabase/content';
+export { getOrderReceipt, quoteShippingMethods } from '@/lib/services/supabase/commerce';
+export { searchCatalog } from '@/lib/services/supabase/search';
+export type { StorefrontContent } from '@/lib/services/supabase/content';
 
 async function requestLocale(): Promise<AppLocale> {
   const locale = await getLocale();
   return isAppLocale(locale) ? locale : 'en';
 }
 
-function isSupabaseSource(): boolean {
-  return getDataSource() === 'supabase';
+export async function getProducts(params: ProductFilterParams = {}): ReturnType<typeof catalog.getProducts> {
+  return catalog.getProducts(params, await requestLocale());
 }
 
-export async function getProducts(
-  params: ProductFilterParams = {},
-  delayMs?: number
-): ReturnType<typeof base.getProducts> {
-  if (isSupabaseSource()) {
-    const [db, locale] = await Promise.all([loadSupabaseCatalog(), requestLocale()]);
-    return db.getProducts(params, locale);
-  }
-  const [response, localize] = await Promise.all([base.getProducts(params, delayMs), getCatalogLocalizer()]);
-  return { ...response, items: localize.products(response.items) };
+export async function getProductBySlug(slugOrId: string): Promise<Product | null> {
+  return catalog.getProductBySlug(slugOrId, await requestLocale());
 }
 
-export async function getProductBySlug(slugOrId: string, delayMs?: number): Promise<Product | null> {
-  if (isSupabaseSource()) {
-    const [db, locale] = await Promise.all([loadSupabaseCatalog(), requestLocale()]);
-    return db.getProductBySlug(slugOrId, locale);
-  }
-  const [product, localize] = await Promise.all([base.getProductBySlug(slugOrId, delayMs), getCatalogLocalizer()]);
-  return product ? localize.product(product) : product;
+export async function getFeaturedProducts(limit?: number): Promise<Product[]> {
+  return catalog.getFeaturedProducts(limit, await requestLocale());
 }
 
-export async function getFeaturedProducts(limit?: number, delayMs?: number): Promise<Product[]> {
-  if (isSupabaseSource()) {
-    const [db, locale] = await Promise.all([loadSupabaseCatalog(), requestLocale()]);
-    return db.getFeaturedProducts(limit, locale);
-  }
-  const [items, localize] = await Promise.all([base.getFeaturedProducts(limit, delayMs), getCatalogLocalizer()]);
-  return localize.products(items);
+export async function getSpotlightProduct(): Promise<Product> {
+  return catalog.getSpotlightProduct(await requestLocale());
 }
 
-export async function getSpotlightProduct(delayMs?: number): Promise<Product> {
-  if (isSupabaseSource()) {
-    const [db, locale] = await Promise.all([loadSupabaseCatalog(), requestLocale()]);
-    return db.getSpotlightProduct(locale);
-  }
-  const [product, localize] = await Promise.all([base.getSpotlightProduct(delayMs), getCatalogLocalizer()]);
-  return localize.product(product);
+export async function getRelatedProducts(productId: string, limit?: number): Promise<Product[]> {
+  return catalog.getRelatedProducts(productId, limit, await requestLocale());
 }
 
-export async function getRelatedProducts(productId: string, limit?: number, delayMs?: number): Promise<Product[]> {
-  if (isSupabaseSource()) {
-    const [db, locale] = await Promise.all([loadSupabaseCatalog(), requestLocale()]);
-    return db.getRelatedProducts(productId, limit, locale);
-  }
-  const [items, localize] = await Promise.all([
-    base.getRelatedProducts(productId, limit, delayMs),
-    getCatalogLocalizer(),
-  ]);
-  return localize.products(items);
+export async function getCategories(): ReturnType<typeof catalog.getCategories> {
+  return catalog.getCategories(await requestLocale());
 }
 
-export async function getCategories(delayMs?: number): ReturnType<typeof base.getCategories> {
-  if (isSupabaseSource()) {
-    const [db, locale] = await Promise.all([loadSupabaseCatalog(), requestLocale()]);
-    return db.getCategories(locale);
-  }
-  const [items, localize] = await Promise.all([base.getCategories(delayMs), getCatalogLocalizer()]);
-  return localize.categories(items);
+export async function getCollections(): ReturnType<typeof catalog.getCollections> {
+  return catalog.getCollections(await requestLocale());
 }
 
-export async function getCollections(delayMs?: number): ReturnType<typeof base.getCollections> {
-  if (isSupabaseSource()) {
-    const [db, locale] = await Promise.all([loadSupabaseCatalog(), requestLocale()]);
-    return db.getCollections(locale);
-  }
-  const [items, localize] = await Promise.all([base.getCollections(delayMs), getCatalogLocalizer()]);
-  return localize.collections(items);
+export async function getCollectionBySlug(slugOrId: string): ReturnType<typeof catalog.getCollectionBySlug> {
+  return catalog.getCollectionBySlug(slugOrId, await requestLocale());
 }
 
-export async function getCollectionBySlug(
-  slugOrId: string,
-  delayMs?: number
-): ReturnType<typeof base.getCollectionBySlug> {
-  if (isSupabaseSource()) {
-    const [db, locale] = await Promise.all([loadSupabaseCatalog(), requestLocale()]);
-    return db.getCollectionBySlug(slugOrId, locale);
-  }
-  const [collection, localize] = await Promise.all([base.getCollectionBySlug(slugOrId, delayMs), getCatalogLocalizer()]);
-  return collection
-    ? {
-        ...collection,
-        collection: localize.collection(collection.collection),
-        products: localize.products(collection.products),
-      }
-    : collection;
+export async function getReviewsByProductId(productId: string): Promise<Review[]> {
+  return catalog.getReviewsByProductId(productId);
 }
 
-export async function getReviewsByProductId(productId: string, delayMs?: number): Promise<Review[]> {
-  if (isSupabaseSource()) {
-    const db = await loadSupabaseCatalog();
-    return db.getReviewsByProductId(productId);
-  }
-  return base.getReviewsByProductId(productId, delayMs);
+export async function getShippingMethods(country?: string) {
+  return catalog.getShippingMethods(country);
+}
+
+/** Full catalog (paged under the hood) for client-side lookups such as wishlist / cart hydration. */
+export async function getCanonicalCatalog(): Promise<Product[]> {
+  const locale = await requestLocale();
+  const pageSize = 50;
+  const first = await catalog.getProducts({ limit: pageSize, page: 1 }, locale);
+  if (first.totalPages <= 1) return first.items;
+  const rest = await Promise.all(
+    Array.from({ length: first.totalPages - 1 }, (_, index) => catalog.getProducts({ limit: pageSize, page: index + 2 }, locale))
+  );
+  return [...first.items, ...rest.flatMap((page) => page.items)];
 }

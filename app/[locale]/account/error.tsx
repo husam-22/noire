@@ -16,7 +16,7 @@ export default function AccountError({
         <ErrorState
           code="ERR // CLIENT-DOSSIER-500"
           title="The private client atelier could not be opened."
-          description="The public catalog shell or account workspace failed to resolve. Browser-local cart, wishlist, and order records have not been changed. Retry the request or return to Maison."
+          description="Your account could not be loaded. Nothing has been changed — retry the request or return to the homepage."
           retryLabel="Retry dossier"
           onRetry={reset}
           secondaryAction={

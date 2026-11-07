@@ -1,11 +1,11 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Link } from '@/i18n/navigation';
-import { ArrowUpRight, Send } from 'lucide-react';
-import type { PrivateDispatchDiscipline } from '@/lib/account/contracts';
+import { useRouter } from 'next/navigation';
+import { Send } from 'lucide-react';
+import type { CustomerPreferencesRecord, PrivateDispatchDiscipline } from '@/lib/account/contracts';
+import { updatePreferencesAction } from '@/lib/actions/account';
 import { Button, Checkbox, TechnicalCode } from '@/components/ui';
-import { useCheckout } from '@/lib/context/checkout-context';
 import { useToast } from '@/components/ui/toast';
 
 const DISCIPLINES: Array<{
@@ -19,77 +19,124 @@ const DISCIPLINES: Array<{
   { id: 'lighting', label: 'Lighting', description: 'Architectural and ambient illumination' },
 ];
 
-export function AccountPreferences() {
-  const { customer } = useCheckout();
-  const { addToast } = useToast();
-  const [disciplines, setDisciplines] = useState<PrivateDispatchDiscipline[]>([]);
-  const [isPreviewApplied, setIsPreviewApplied] = useState(false);
+function defaults(email: string): CustomerPreferencesRecord {
+  return {
+    email,
+    newsletter: false,
+    privateReleases: false,
+    smsUpdates: false,
+    preferredCurrency: 'USD',
+    disciplines: [],
+  };
+}
 
-  const toggleDiscipline = (discipline: PrivateDispatchDiscipline, checked: boolean) => {
-    setDisciplines((current) => {
-      if (checked) return current.includes(discipline) ? current : [...current, discipline];
-      return current.filter((item) => item !== discipline);
-    });
-    setIsPreviewApplied(false);
+export function AccountPreferences({
+  email,
+  preferences,
+}: {
+  email: string;
+  preferences: CustomerPreferencesRecord | null;
+}) {
+  const router = useRouter();
+  const { addToast } = useToast();
+  const [draft, setDraft] = useState<CustomerPreferencesRecord>(preferences ?? defaults(email));
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
+
+  const update = (patch: Partial<CustomerPreferencesRecord>) => {
+    setDraft((current) => ({ ...current, ...patch }));
+    setIsDirty(true);
   };
 
-  const applyPreview = () => {
-    setIsPreviewApplied(true);
-    addToast({
-      type: 'info',
-      title: 'Dispatch preview updated',
-      description: 'This selection is held in the current page only. No newsletter registration or account preference was sent or saved.',
-    });
+  const toggleDiscipline = (discipline: PrivateDispatchDiscipline, checked: boolean) => {
+    const next = checked
+      ? draft.disciplines.includes(discipline)
+        ? draft.disciplines
+        : [...draft.disciplines, discipline]
+      : draft.disciplines.filter((item) => item !== discipline);
+    update({ disciplines: next });
+  };
+
+  const save = async () => {
+    setIsSaving(true);
+    const result = await updatePreferencesAction({ ...draft, email });
+    setIsSaving(false);
+    if (!result.ok) {
+      addToast({ type: 'error', title: 'Could not save preferences', description: result.error });
+      return;
+    }
+    setDraft(result.data);
+    setIsDirty(false);
+    addToast({ type: 'success', title: 'Preferences saved' });
+    router.refresh();
   };
 
   return (
     <section id="private-dispatch" aria-labelledby="private-dispatch-heading" className="scroll-mt-28 space-y-5 sm:space-y-7">
       <div className="flex flex-wrap items-end justify-between gap-3 border-b border-border pb-4">
         <div>
-          <TechnicalCode>Correspondence protocol // 06</TechnicalCode>
+          <TechnicalCode>Communication // 06</TechnicalCode>
           <h2 id="private-dispatch-heading" className="mt-2 font-display text-2xl text-foreground sm:text-3xl">
-            Private Dispatch
+            Communication Preferences
           </h2>
         </div>
         <span className="border border-border px-2.5 py-1.5 font-mono text-[8px] uppercase tracking-[0.11em] text-foreground-subtle">
-          Registration not connected
+          {isDirty ? 'Unsaved changes' : 'Saved to your account'}
         </span>
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:gap-5">
         <div className="min-w-0 border border-border bg-surface p-4 sm:p-6 lg:col-span-5">
-          <TechnicalCode>Client dispatch endpoint</TechnicalCode>
-          <h3 className="mt-2 font-display text-xl text-foreground">Contact address</h3>
+          <TechnicalCode>Contact</TechnicalCode>
+          <h3 className="mt-2 font-display text-xl text-foreground">Where we reach you</h3>
           <dl className="mt-4 border-y border-border py-4">
-            <dt className="font-mono text-[8px] uppercase tracking-[0.12em] text-foreground-subtle">Email from checkout draft</dt>
-            <dd className="mt-2 break-all text-small text-foreground">{customer.email.trim() || 'NOT PROVIDED'}</dd>
+            <dt className="font-mono text-[8px] uppercase tracking-[0.12em] text-foreground-subtle">Email</dt>
+            <dd className="mt-2 break-all text-small text-foreground">{email}</dd>
           </dl>
-          <p className="mt-4 text-small leading-relaxed text-foreground-muted">
-            This address is an unverified checkout-session value, not a subscription record.
-          </p>
-          <Link href="#client-profile" className="mt-3 inline-flex min-h-11 items-center gap-2 border-b border-border px-1 font-mono text-[9px] uppercase tracking-[0.11em] text-foreground-muted transition-colors hover:border-foreground hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground">
-            Review contact draft <ArrowUpRight className="h-3 w-3" aria-hidden="true" />
-          </Link>
+          <fieldset className="mt-4 space-y-3">
+            <legend className="sr-only">Email and SMS preferences</legend>
+            <Checkbox
+              checked={draft.newsletter}
+              onChange={(checked) => update({ newsletter: checked })}
+              label="Monthly newsletter"
+              description="Release notes and monographs, once a month."
+              className="min-h-11 border border-border p-3"
+            />
+            <Checkbox
+              checked={draft.privateReleases}
+              onChange={(checked) => update({ privateReleases: checked })}
+              label="Private release notices"
+              description="Early access to numbered batches before public listing."
+              className="min-h-11 border border-border p-3"
+            />
+            <Checkbox
+              checked={draft.smsUpdates}
+              onChange={(checked) => update({ smsUpdates: checked })}
+              label="SMS order updates"
+              description="Confirmation and dispatch notices by text message."
+              className="min-h-11 border border-border p-3"
+            />
+          </fieldset>
         </div>
 
         <div className="min-w-0 border border-border bg-surface p-4 sm:p-6 lg:col-span-7">
           <div className="flex items-start gap-3 border-b border-border pb-4">
             <Send className="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden="true" />
             <div>
-              <TechnicalCode>Interest map // preview only</TechnicalCode>
+              <TechnicalCode>Interests</TechnicalCode>
               <h3 className="mt-2 font-display text-xl text-foreground">Disciplines</h3>
               <p className="mt-1.5 text-small leading-relaxed text-foreground-muted">
-                Select interests for this page preview. The sitewide Private Dispatch form remains the only available registration entry point.
+                Tell us which categories you care about so release notices stay relevant.
               </p>
             </div>
           </div>
 
           <fieldset className="mt-4 grid grid-cols-1 gap-x-5 gap-y-4 sm:grid-cols-2">
-            <legend className="sr-only">Private Dispatch discipline preview</legend>
+            <legend className="sr-only">Discipline interests</legend>
             {DISCIPLINES.map((discipline) => (
               <Checkbox
                 key={discipline.id}
-                checked={disciplines.includes(discipline.id)}
+                checked={draft.disciplines.includes(discipline.id)}
                 onChange={(checked) => toggleDiscipline(discipline.id, checked)}
                 label={discipline.label}
                 description={discipline.description}
@@ -100,24 +147,13 @@ export function AccountPreferences() {
 
           <div className="mt-5 flex flex-col gap-3 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
             <p aria-live="polite" className="text-[10px] leading-relaxed text-foreground-subtle">
-              {isPreviewApplied
-                ? `${disciplines.length} preview interest${disciplines.length === 1 ? '' : 's'} selected // not persisted`
-                : 'Selections are temporary and will reset when this page is reloaded.'}
+              {`${draft.disciplines.length} interest${draft.disciplines.length === 1 ? '' : 's'} selected`}
             </p>
-            <Button type="button" variant="secondary" size="md" onClick={applyPreview}>
-              Apply preview selection
+            <Button type="button" variant="primary" size="md" isLoading={isSaving} disabled={!isDirty} onClick={save}>
+              Save preferences
             </Button>
           </div>
         </div>
-      </div>
-
-      <div className="flex flex-col gap-3 border-s border-foreground px-4 py-2 sm:flex-row sm:items-center sm:justify-between sm:px-5">
-        <p className="max-w-2xl text-small leading-relaxed text-foreground-muted">
-          Newsletter registration is not duplicated in this workspace. Use the existing sitewide Private Dispatch form; its current implementation is a front-end preview and is not a persistent subscription service.
-        </p>
-        <Link href="/#private-dispatch" className="inline-flex min-h-11 shrink-0 items-center gap-2 border-b border-foreground px-1 font-mono text-[9px] uppercase tracking-[0.11em] text-foreground transition-colors hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground">
-          Open dispatch registration <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
-        </Link>
       </div>
     </section>
   );

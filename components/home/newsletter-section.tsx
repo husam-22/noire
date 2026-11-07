@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { ArrowRight, Check } from 'lucide-react';
 import { Container } from '@/components/layout';
+import { subscribeNewsletterAction } from '@/lib/actions/newsletter';
 import { Reveal } from '@/components/motion';
 import {
   Eyebrow,
@@ -23,7 +24,7 @@ export function NewsletterSection() {
   >('all');
   const [error, setError] = useState<string | undefined>(undefined);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isPreviewed, setIsPreviewed] = useState(false);
+  const [isSubscribed, setIsSubscribed] = useState(false);
 
   const validateEmail = (value: string): string | undefined => {
     const trimmed = value.trim();
@@ -53,22 +54,21 @@ export function NewsletterSection() {
 
     setError(undefined);
     setIsSubmitting(true);
-    await new Promise((resolve) => setTimeout(resolve, 250));
+    const result = await subscribeNewsletterAction(trimmed, `home:${disciplineInterest}`);
+    setIsSubmitting(false);
 
-    if (trimmed.toLowerCase() === 'error@example.test') {
-      setIsSubmitting(false);
-      const demoError = t('errors.simulated');
-      setError(demoError);
+    if (!result.ok) {
+      const message = t('errors.failed');
+      setError(message);
       addToast({
         type: 'error',
-        title: t('errors.simulatedTitle'),
-        description: demoError,
+        title: t('errors.failedTitle'),
+        description: message,
       });
       return;
     }
 
-    setIsSubmitting(false);
-    setIsPreviewed(true);
+    setIsSubscribed(true);
     setEmail('');
     addToast({
       type: 'success',
@@ -93,7 +93,7 @@ export function NewsletterSection() {
                 <Eyebrow index="10" tone="accent">
                   {t('eyebrow')}
                 </Eyebrow>
-                <TechnicalCode>{t('localPreview')}</TechnicalCode>
+                <TechnicalCode>{t('badge')}</TechnicalCode>
               </div>
 
               <h2
@@ -112,15 +112,15 @@ export function NewsletterSection() {
               </p>
 
               <div className="flex flex-wrap items-center gap-6 pt-2 font-mono text-[10px] uppercase tracking-[0.16em] text-foreground-subtle">
-                <span>{t('noService')}</span>
+                <span>{t('promiseFrequency')}</span>
                 <span>•</span>
-                <span>{t('noStorage')}</span>
+                <span>{t('promisePrivacy')}</span>
               </div>
             </div>
 
             {/* Right 6 Columns: Validated Interactive Form or Confirmed Dossier */}
             <div className="lg:col-span-6">
-              {isPreviewed ? (
+              {isSubscribed ? (
                 <div
                   role="status"
                   aria-live="polite"
@@ -129,19 +129,19 @@ export function NewsletterSection() {
                   <div className="flex items-center justify-between gap-3 border-b border-border pb-4">
                     <span className="inline-flex items-center gap-2 font-mono text-xs uppercase tracking-[0.16em] text-accent">
                       <Check className="h-4 w-4" aria-hidden="true" />
-                      <span>{t('previewComplete')}</span>
+                      <span>{t('subscribed')}</span>
                     </span>
                     <span className="border border-border bg-background px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.14em] text-foreground">
-                      {t('nothingSent')}
+                      {t('subscribedBadge')}
                     </span>
                   </div>
 
                   <div className="space-y-2">
                     <h3 className="font-display text-h3 tracking-tight text-foreground">
-                      {t('noSubscription')}
+                      {t('subscribedTitle')}
                     </h3>
                     <p className="text-small leading-relaxed text-foreground-muted">
-                      {t.rich('preferencePreview', {
+                      {t.rich('subscribedBody', {
                         preference: t(`preferences.${disciplineInterest}`),
                         em: (chunks) => <span className="uppercase text-accent">{chunks}</span>,
                       })}
@@ -149,16 +149,16 @@ export function NewsletterSection() {
                   </div>
 
                   <div className="flex flex-wrap items-center justify-between gap-4 border-t border-border pt-4 font-mono text-[10px] uppercase tracking-[0.14em] text-foreground-subtle">
-                    <span>{t('notConnected')}</span>
+                    <span>{t('unsubscribeNote')}</span>
                     <button
                       type="button"
                       onClick={() => {
-                        setIsPreviewed(false);
+                        setIsSubscribed(false);
                         setEmail('');
                       }}
                       className="text-foreground underline underline-offset-4 transition-colors hover:text-accent"
                     >
-                      {t('tryAgain')}
+                      {t('addAnother')}
                     </button>
                   </div>
                 </div>
@@ -169,9 +169,9 @@ export function NewsletterSection() {
                   className="space-y-5 border border-border bg-surface p-6 sm:p-8"
                 >
                   <div className="flex items-center justify-between border-b border-border pb-3 font-mono text-[10px] uppercase tracking-[0.14em] text-foreground-muted">
-                    <span>{t('localNewsletterPreview')}</span>
+                    <span>{t('formTitle')}</span>
                     <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-accent">
-                      {t('demoMode')}
+                      {t('formBadge')}
                     </span>
                   </div>
 
@@ -207,7 +207,7 @@ export function NewsletterSection() {
                   {/* Email Input using Reusable Primitive */}
                   <Input
                     label={t('emailLabel')}
-                    codeLabel={t('localPreview')}
+                    codeLabel={t('badge')}
                     type="email"
                     placeholder={t('emailPlaceholder')}
                     value={email}

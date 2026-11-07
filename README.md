@@ -2,13 +2,15 @@
 
 ## Current checkpoint
 
-Phase 12 — internationalization (Arabic + English), RTL layout, automated test baseline, and Supabase backend scaffolding (schema, RLS, RPCs, auth, seed).
+Phase 13 — Supabase is the single source of truth for every page, locale and the admin Command Center. No mock, demo or preview data path remains in the deployed app.
 
 ## Implementation status
 
-This repository preserves a demo storefront and admin interface. Backend/database persistence, admin authentication/authorization, real payment processing, and fulfillment are not production-integrated. Demo checkout remains pending settlement; no payment authorization/capture or fulfillment is connected.
-
-**ADMIN AUTHENTICATION IS ONLY ENFORCED WHEN SUPABASE IS CONFIGURED.** In mock/preview mode `noindex, nofollow` is not access control.
+- **Storefront** (home, shop, product, cart, wishlist, search, journal, checkout, order confirmation) reads catalog, content and settings from Supabase; pages are statically rendered and revalidated every 60 s or immediately after an admin save.
+- **Checkout** places orders through the `place_order()` RPC with **manual payment** (cash on delivery or bank transfer). Orders start as `pending_settlement` / payment `pending`; staff confirm payment from `/admin/orders/<id>`.
+- **Account** (`/account`) and **admin** (`/admin`) are server-rendered per request, require a Supabase session (middleware fails closed) and the `staff`/`admin` role for `/admin`.
+- **Admin** manages products, inventory, orders (status, carrier/tracking, payment confirmation), customers, discounts, storefront content (featured collection/products/articles, announcement bar) and store settings (payment methods, bank details, support contact, free-shipping threshold).
+- Fixtures in `lib/data/` are used only by `scripts/seed-*.ts` and the unit tests.
 
 ## Scripts
 
@@ -77,7 +79,7 @@ supabase link --project-ref <ref> # once
 npm run db:push                   # apply supabase/migrations/*.sql
 npm run db:seed                   # load fixtures + Arabic catalog translations (service role)
 #   …or without a service-role key: npm run db:seed:sql → paste supabase/seed.sql in the SQL Editor
-NOIRE_DATA_SOURCE=supabase npm run dev
+npm run dev
 ```
 
 | Command            | Purpose                                                   |
@@ -88,9 +90,9 @@ NOIRE_DATA_SOURCE=supabase npm run dev
 | `npm run db:seed:sql` | Emit the same seed as idempotent SQL → `supabase/seed.sql` (no service-role key needed) |
 | `npm run db:types` | Regenerate `types/supabase.ts` from the live schema       |
 
-- `NOIRE_DATA_SOURCE=mock` (default) keeps the app on in-memory fixtures; `supabase` switches catalog reads to Postgres via `lib/services/supabase/`.
-- When Supabase credentials are present, `middleware.ts` requires a session for `/account` and the `staff`/`admin` role for `/admin`. Without them the app runs in preview mode and **`/admin` stays unprotected**.
-- Orders are created only through the `place_order()` RPC (server-side pricing, inventory, discounts, idempotency). Payments (Stripe) are phase 2.
+- `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` are required; without them `/account` and `/admin` return 503 and data pages throw at request time.
+- `middleware.ts` requires a session for `/account` and the `staff`/`admin` role (JWT `app_metadata.role`) for `/admin`.
+- Orders are created only through the `place_order()` RPC (server-side pricing, inventory, discounts, idempotency). Payment is manual (COD / bank transfer); card payments (Stripe) can be added later.
 
 ## Known limitations
 

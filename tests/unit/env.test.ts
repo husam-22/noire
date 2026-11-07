@@ -10,7 +10,6 @@ async function loadEnvModule() {
 
 describe('lib/env', () => {
   beforeEach(() => {
-    delete process.env.NOIRE_DATA_SOURCE;
     delete process.env.NEXT_PUBLIC_SUPABASE_URL;
     delete process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     delete process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -21,25 +20,25 @@ describe('lib/env', () => {
     vi.restoreAllMocks();
   });
 
-  it('defaults to the mock data source', async () => {
+  it('reports missing public Supabase config and fails closed', async () => {
     const env = await loadEnvModule();
-    expect(env.getDataSource()).toBe('mock');
     expect(env.hasSupabasePublicConfig()).toBe(false);
+    expect(() => env.assertSupabaseConfigured()).toThrow(/NEXT_PUBLIC_SUPABASE_URL/);
   });
 
-  it('falls back to mock when supabase is requested without credentials', async () => {
-    process.env.NOIRE_DATA_SOURCE = 'supabase';
-    const env = await loadEnvModule();
-    expect(env.getDataSource()).toBe('mock');
-  });
-
-  it('selects supabase when credentials are present', async () => {
-    process.env.NOIRE_DATA_SOURCE = 'supabase';
-    process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://demo.supabase.co';
+  it('accepts a configured Supabase project', async () => {
+    process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://example.supabase.co';
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'anon';
     const env = await loadEnvModule();
-    expect(env.getDataSource()).toBe('supabase');
     expect(env.hasSupabasePublicConfig()).toBe(true);
+    expect(() => env.assertSupabaseConfigured()).not.toThrow();
+  });
+
+  it('ignores blank credentials', async () => {
+    process.env.NEXT_PUBLIC_SUPABASE_URL = '   ';
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = '';
+    const env = await loadEnvModule();
+    expect(env.hasSupabasePublicConfig()).toBe(false);
   });
 
   it('throws for missing server secrets instead of returning undefined', async () => {

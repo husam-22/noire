@@ -26,11 +26,11 @@ export default async function NoireShopPage() {
     spotlightProduct,
     allProductsResponse,
   ] = await Promise.all([
-    getCategories(0),
-    getCollections(0),
-    getFeaturedProducts(4, 0),
-    getSpotlightProduct(0),
-    getProducts({ limit: 50, sort: 'featured' }, 0),
+    getCategories(),
+    getCollections(),
+    getFeaturedProducts(4),
+    getSpotlightProduct(),
+    getProducts({ limit: 50, sort: 'featured' }),
   ]);
 
   return (

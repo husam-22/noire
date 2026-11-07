@@ -6,16 +6,14 @@ import {
   getFeaturedProducts,
   getSpotlightProduct,
   getProducts,
-  getDiscounts,
 } from '@/lib/services/localized';
 import { GlobalHeader, GlobalFooter } from '@/components/navigation';
 import { QuickViewModal } from '@/components/product';
 import { CartExperience } from '@/components/cart';
 
 export const metadata: Metadata = {
-  title: 'Allocation Dossier (Bag) | NOIRÉ',
-  description:
-    'Review your browser-local NOIRÉ demonstration bag before continuing to the checkout preview.',
+  title: 'Your Bag | NOIRÉ',
+  description: 'Review the items in your NOIRÉ bag before checkout.',
   robots: { index: false, follow: false },
 };
 
@@ -26,19 +24,13 @@ export default async function NoireCartPage() {
     featuredProducts,
     spotlightProduct,
     allProductsResponse,
-    availableDiscounts,
   ] = await Promise.all([
-    getCategories(0),
-    getCollections(0),
-    getFeaturedProducts(4, 0),
-    getSpotlightProduct(0),
-    getProducts({ limit: 50 }, 0),
-    getDiscounts(0),
+    getCategories(),
+    getCollections(),
+    getFeaturedProducts(4),
+    getSpotlightProduct(),
+    getProducts({ limit: 50 }),
   ]);
-
-  const activeDiscounts = availableDiscounts.filter(
-    (d) => d.status === 'active'
-  );
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -51,12 +43,9 @@ export default async function NoireCartPage() {
         allowTransparentTop={false}
       />
 
-      {/* Primary Allocation Bag Content */}
+      {/* Bag */}
       <main id="main-content">
-        <CartExperience
-          allProducts={allProductsResponse.items}
-          availableDiscounts={activeDiscounts}
-        />
+        <CartExperience allProducts={allProductsResponse.items} />
       </main>
 
       {/* Global Editorial Footer */}

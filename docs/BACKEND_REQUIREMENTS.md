@@ -15,7 +15,7 @@
 | التسعير والطلبات | **كلها على الخادم** عبر دالة `place_order()` داخل Postgres (معاملة واحدة، Idempotent) |
 | الدفع | 🔜 Stripe (Payment Intents + Webhook). الهيكل جاهز، التكامل في المرحلة 2 |
 | الترجمة | جداول `*_translations` لكل كيان كتالوج بحسب `locale` (`en` / `ar`) |
-| التبديل | متغير `NOIRE_DATA_SOURCE=mock|supabase` — الموقع يعمل على البيانات الوهمية حتى تُضاف المفاتيح |
+| مصدر البيانات | Supabase فقط — لا يوجد وضع وهمي؛ الموقع يفشل بشكل آمن إذا غابت المفاتيح |
 
 ---
 
@@ -37,8 +37,8 @@
 | `lib/supabase/middleware.ts` | تجديد الجلسة في الـ middleware |
 | `lib/supabase/auth.ts` | `getAuthContext`, `requireUser`, `requireStaff`, `requireAdmin` للاستخدام في Server Actions |
 | `lib/services/supabase/mappers.ts` | تحويل صفوف قاعدة البيانات ↔ عقود TypeScript الحالية (مع الترجمة) |
-| `lib/services/supabase/catalog.ts` | قراءات الكتالوج من Supabase بنفس توقيعات `lib/mock-api` |
-| `lib/services/localized.ts` | الموزّع: يختار mock أو Supabase حسب `NOIRE_DATA_SOURCE` |
+| `lib/services/supabase/catalog.ts` | قراءات الكتالوج من Supabase |
+| `lib/services/localized.ts` | أغلفة الخدمات مع تمرير اللغة الحالية |
 | `lib/account/supabase-customer-session.ts` | مزوّد جلسة العميل (يحل محل `previewCustomerSessionProvider`) |
 | `middleware.ts` | حماية `/account` (مستخدم مسجّل) و`/admin` (staff/admin) عند تفعيل Supabase |
 | `app/[locale]/auth/sign-in` + `components/auth/sign-in-form.tsx` | صفحة تسجيل الدخول (EN/AR) |
@@ -75,7 +75,6 @@ npm run db:push              # يطبّق ملفات supabase/migrations/*.sql
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | المتصفح + الخادم | لا (محمي بـ RLS) |
 | `SUPABASE_SERVICE_ROLE_KEY` | الخادم فقط (seed، webhooks، إدارة) | **نعم** |
 | `NEXT_PUBLIC_SITE_URL` | روابط البريد وإعادة التوجيه | لا |
-| `NOIRE_DATA_SOURCE` | `supabase` لتفعيل القاعدة | لا |
 
 ### 2.4 إعداد Auth في لوحة Supabase
 - **Authentication → URL Configuration**:
@@ -93,7 +92,7 @@ npm run db:seed          # يحتاج SUPABASE_SERVICE_ROLE_KEY
 # أو بدون مفتاح service_role:
 npm run db:seed:sql      # يولّد supabase/seed.sql → الصقه في Dashboard → SQL Editor (أو: supabase db query -f supabase/seed.sql)
 ```
-> **تنبيه:** في وضع `NOIRE_DATA_SOURCE=supabase` يُظهر الموقع خطأ 500 إذا كان الكتالوج فارغاً — نفّذ التعبئة مباشرة بعد الهجرات.
+> **تنبيه:** يُظهر الموقع خطأ 500 إذا كان الكتالوج فارغاً — نفّذ التعبئة مباشرة بعد الهجرات.
 يرفع: 12 منتجاً، 6 فئات، 4 مجموعات، المقالات، طرق الشحن، أكواد الخصم التجريبية، الترجمات العربية للفئات والمجموعات، والإعدادات الافتراضية.
 
 ### 2.6 أول مدير
@@ -181,7 +180,7 @@ shipping_methods · settings · journal_articles · newsletter_subscribers · au
 ### ما يجب تغييره في الواجهة عند التفعيل (🔜 مرحلة التكامل)
 | الحالي | المطلوب |
 |---|---|
-| `lib/mock-api.createOrder / finalizeOrder` يحسب المجاميع محلياً | استدعاء `supabase.rpc('place_order', { payload })` من Server Action وإرجاع `order_id` |
+| ~~حساب المجاميع محلياً~~ (أُزيل) | `lib/actions/commerce.ts` يستدعي `supabase.rpc('place_order', { payload })` ويُرجع `order_id` |
 | الطلبات محفوظة في `localStorage` (`CommerceContext.placedOrders`) | قراءة الطلبات من `orders` للمستخدم المسجّل؛ للضيف: صفحة تأكيد عبر رابط موقّع بالبريد |
 | السلة والمفضلة في `localStorage` | إبقاء localStorage للضيوف + مزامنة مع `carts` / `wishlist_items` عند تسجيل الدخول |
 | `validateDiscountCode` محلي | `supabase.rpc('validate_discount', { p_code, p_subtotal })` |

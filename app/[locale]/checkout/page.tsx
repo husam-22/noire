@@ -12,20 +12,19 @@ import { QuickViewModal } from '@/components/product';
 import { CheckoutExperience } from '@/components/checkout';
 
 export const metadata: Metadata = {
-  title: 'Demo Checkout | NOIRÉ',
-  description:
-    'Browser-local checkout demonstration. No payment provider is connected; no funds are authorized or captured.',
+  title: 'Checkout | NOIRÉ',
+  description: 'Complete your NOIRÉ order — pay in cash on delivery or by bank transfer.',
   robots: { index: false, follow: false },
 };
 
 export default async function NoireCheckoutPage() {
   const [categories, collections, featuredProducts, spotlightProduct, shippingMethods] =
     await Promise.all([
-      getCategories(0),
-      getCollections(0),
-      getFeaturedProducts(4, 0),
-      getSpotlightProduct(0),
-      getShippingMethods(undefined, 0),
+      getCategories(),
+      getCollections(),
+      getFeaturedProducts(4),
+      getSpotlightProduct(),
+      getShippingMethods(),
     ]);
 
   return (

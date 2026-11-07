@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import type { CustomerSession, Product } from '@/types';
+import type { Product } from '@/types';
+import type { AuthenticatedCustomerSession, CustomerAccountSnapshot } from '@/lib/account/contracts';
 import { AccountAddresses } from '@/components/account/account-addresses';
 import { AccountHeader } from '@/components/account/account-header';
 import { AccountNavigation, type AccountSectionId } from '@/components/account/account-navigation';
@@ -9,9 +10,7 @@ import { AccountOrders } from '@/components/account/account-orders';
 import { AccountOverview } from '@/components/account/account-overview';
 import { AccountPreferences } from '@/components/account/account-preferences';
 import { AccountProfile } from '@/components/account/account-profile';
-import { AccountContentSkeleton } from '@/components/account/account-skeleton';
 import { Container } from '@/components/layout';
-import { useCheckout } from '@/lib/context/checkout-context';
 import { useCommerce } from '@/lib/context/commerce-context';
 
 const ACCOUNT_SECTIONS: AccountSectionId[] = [
@@ -23,21 +22,14 @@ const ACCOUNT_SECTIONS: AccountSectionId[] = [
 ];
 
 interface AccountExperienceProps {
-  session: CustomerSession;
+  session: AuthenticatedCustomerSession;
+  snapshot: CustomerAccountSnapshot;
   allProducts: Product[];
 }
 
-export function AccountExperience({ session, allProducts }: AccountExperienceProps) {
-  const {
-    cartCount,
-    isCartHydrated,
-    placedOrders,
-    pruneWishlistIds,
-    wishlistIds,
-  } = useCommerce();
-  const { isCheckoutHydrated } = useCheckout();
+export function AccountExperience({ session, snapshot, allProducts }: AccountExperienceProps) {
+  const { cartCount, isCartHydrated, pruneWishlistIds, wishlistIds } = useCommerce();
   const [activeSection, setActiveSection] = useState<AccountSectionId>('overview');
-  const isHydrated = isCartHydrated && isCheckoutHydrated;
 
   const productsById = useMemo(
     () => new Map(allProducts.map((product) => [product.id, product])),
@@ -56,23 +48,16 @@ export function AccountExperience({ session, allProducts }: AccountExperiencePro
     return resolved;
   }, [productsById, wishlistIds]);
 
-  const sortedOrders = useMemo(
-    () =>
-      [...placedOrders].sort(
-        (left, right) =>
-          new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime()
-      ),
-    [placedOrders]
-  );
+  const orders = snapshot.orders;
 
   const orderedInstrumentCount = useMemo(
     () =>
-      sortedOrders.reduce(
+      orders.reduce(
         (total, order) =>
           total + order.items.reduce((itemsTotal, item) => itemsTotal + item.quantity, 0),
         0
       ),
-    [sortedOrders]
+    [orders]
   );
 
   useEffect(() => {
@@ -81,7 +66,7 @@ export function AccountExperience({ session, allProducts }: AccountExperiencePro
   }, [allProducts, isCartHydrated, pruneWishlistIds, wishlistIds]);
 
   useEffect(() => {
-    if (!isHydrated || typeof IntersectionObserver === 'undefined') return;
+    if (typeof IntersectionObserver === 'undefined') return;
     const sections = ACCOUNT_SECTIONS.map((id) => document.getElementById(id)).filter(
       (section): section is HTMLElement => section !== null
     );
@@ -103,11 +88,15 @@ export function AccountExperience({ session, allProducts }: AccountExperiencePro
 
     sections.forEach((section) => observer.observe(section));
     return () => observer.disconnect();
-  }, [isHydrated]);
+  }, []);
+
+  const profile = snapshot.profile ?? {
+    ...session.customer,
+  };
 
   return (
     <>
-      <AccountHeader session={session} />
+      <AccountHeader session={session} profile={profile} />
       <main id="main-content" className="bg-background py-7 text-foreground sm:py-10 lg:py-12">
         <Container size="wide">
           <div className="grid min-w-0 grid-cols-1 items-start gap-5 lg:grid-cols-12 lg:gap-8">
@@ -115,24 +104,18 @@ export function AccountExperience({ session, allProducts }: AccountExperiencePro
               <AccountNavigation activeSection={activeSection} />
             </div>
             <div className="min-w-0 space-y-12 lg:col-span-9 lg:space-y-16">
-              {!isHydrated ? (
-                <AccountContentSkeleton />
-              ) : (
-                <>
-                  <AccountOverview
-                    session={session}
-                    isHydrated={isHydrated}
-                    activeAllocationCount={cartCount}
-                    savedProducts={savedProducts}
-                    orders={sortedOrders}
-                    orderedInstrumentCount={orderedInstrumentCount}
-                  />
-                  <AccountOrders orders={sortedOrders} isHydrated={isHydrated} />
-                  <AccountAddresses orders={sortedOrders} />
-                  <AccountProfile session={session} />
-                  <AccountPreferences />
-                </>
-              )}
+              <AccountOverview
+                profile={profile}
+                isHydrated={isCartHydrated}
+                activeAllocationCount={cartCount}
+                savedProducts={savedProducts}
+                orders={orders}
+                orderedInstrumentCount={orderedInstrumentCount}
+              />
+              <AccountOrders orders={orders} />
+              <AccountAddresses addresses={snapshot.addresses} profile={profile} />
+              <AccountProfile profile={profile} />
+              <AccountPreferences email={profile.email} preferences={snapshot.preferences} />
             </div>
           </div>
         </Container>

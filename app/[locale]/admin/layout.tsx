@@ -1,5 +1,9 @@
 import type { Metadata } from 'next';
+import { redirect } from '@/i18n/navigation';
+import { getAuthContext } from '@/lib/supabase/auth';
 import { AdminShell } from '@/components/admin';
+
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: {
@@ -12,6 +16,11 @@ export const metadata: Metadata = {
   },
 };
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  return <AdminShell>{children}</AdminShell>;
+export default async function AdminLayout({ children, params }: { children: React.ReactNode; params: { locale: string } }) {
+  // Middleware already enforces staff access; this is defence in depth and provides the user to the shell.
+  const auth = await getAuthContext();
+  if (!auth) redirect({ href: '/auth/sign-in?next=/admin', locale: params.locale });
+  if (auth && auth.role !== 'admin' && auth.role !== 'staff') redirect({ href: '/account', locale: params.locale });
+
+  return <AdminShell user={auth ? { email: auth.email ?? '', role: auth.role } : null}>{children}</AdminShell>;
 }
