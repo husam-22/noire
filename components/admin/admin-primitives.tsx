@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useTranslations } from 'next-intl';
 import { Badge, TechnicalCode, Skeleton } from '@/components/ui';
 import type { Order, Product } from '@/types';
 import { orderStatusLabel, paymentStatusLabel } from '@/lib/account/order-utils';
@@ -44,11 +45,12 @@ export function AdminMetric({
   note: string;
   index: string;
 }) {
+  const t = useTranslations('admin.primitives');
   return (
     <article className="min-w-0 border border-border bg-surface p-4 sm:p-5">
       <div className="flex items-start justify-between gap-3 border-b border-border pb-3">
         <TechnicalCode>{index}</TechnicalCode>
-        <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-foreground-subtle">Live</span>
+        <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-foreground-subtle">{t('live')}</span>
       </div>
       <p className="mt-4 font-mono text-[9px] uppercase tracking-[0.13em] text-foreground-muted">{label}</p>
       <p className="mt-1.5 break-words font-display text-3xl tabular-nums text-foreground">{value}</p>
@@ -58,15 +60,17 @@ export function AdminMetric({
 }
 
 export function AdminLoadingState({
-  label = 'Loading',
+  label,
   rows = 5,
 }: {
   label?: string;
   rows?: number;
 }) {
+  const t = useTranslations('admin.primitives');
+  const resolvedLabel = label ?? t('loading');
   return (
-    <div role="status" aria-live="polite" aria-busy="true" aria-label={label} className="space-y-4">
-      <span className="sr-only">{label}</span>
+    <div role="status" aria-live="polite" aria-busy="true" aria-label={resolvedLabel} className="space-y-4">
+      <span className="sr-only">{resolvedLabel}</span>
       <Skeleton className="h-7 w-44" />
       <Skeleton className="h-4 w-72 max-w-full" />
       <div className="mt-7 space-y-2 border-y border-border py-2">
@@ -84,6 +88,7 @@ export function AdminLoadingState({
 }
 
 export function OrderStatusBadge({ status }: { status: Order['status'] }) {
+  const t = useTranslations('orders');
   const variant = status === 'pending_settlement'
     ? 'warning'
     : status === 'cancelled' || status === 'returned'
@@ -91,24 +96,26 @@ export function OrderStatusBadge({ status }: { status: Order['status'] }) {
     : status === 'shipped' || status === 'delivered'
     ? 'success'
     : 'default';
-  return <Badge variant={variant} withDot>{orderStatusLabel(status)}</Badge>;
+  return <Badge variant={variant} withDot>{orderStatusLabel(t, status)}</Badge>;
 }
 
 export function PaymentStatusBadge({ status }: { status: Order['paymentStatus'] }) {
+  const t = useTranslations('orders');
   const variant = status === 'paid'
     ? 'success'
     : status === 'failed' || status === 'refunded'
     ? 'danger'
     : 'warning';
-  return <Badge variant={variant} withDot>{paymentStatusLabel(status)}</Badge>;
+  return <Badge variant={variant} withDot>{paymentStatusLabel(t, status)}</Badge>;
 }
 
 export function ProductStatusBadge({ product }: { product: Product }) {
+  const t = useTranslations('admin.primitives');
   const config = product.status === 'active'
-    ? { label: 'Active', variant: 'success' as const }
+    ? { label: t('productStatus.active'), variant: 'success' as const }
     : product.status === 'draft'
-    ? { label: 'Draft', variant: 'warning' as const }
-    : { label: 'Archived', variant: 'default' as const };
+    ? { label: t('productStatus.draft'), variant: 'warning' as const }
+    : { label: t('productStatus.archived'), variant: 'default' as const };
   return <Badge variant={config.variant}>{config.label}</Badge>;
 }
 
@@ -122,17 +129,19 @@ export function AdminSurface({
   return <section className={cn('border border-border bg-surface', className)}>{children}</section>;
 }
 
-export function inventoryState(product: Product): {
+export type AdminTranslator = (key: string, values?: Record<string, string | number | Date>) => string;
+
+export function inventoryState(t: AdminTranslator, product: Product): {
   label: string;
   variant: 'success' | 'warning' | 'danger' | 'default' | 'accent';
 } {
-  if (product.status !== 'active') return { label: 'Unavailable', variant: 'default' };
-  if (product.stockStatus === 'pre_order') return { label: 'Pre-order', variant: 'accent' };
+  if (product.status !== 'active') return { label: t('inventory.unavailable'), variant: 'default' };
+  if (product.stockStatus === 'pre_order') return { label: t('inventory.preOrder'), variant: 'accent' };
   if (product.stockStatus === 'out_of_stock' || product.inventoryCount <= 0) {
-    return { label: 'Out of stock', variant: 'danger' };
+    return { label: t('inventory.outOfStock'), variant: 'danger' };
   }
   if (product.stockStatus === 'low_stock' || product.inventoryCount <= 5) {
-    return { label: 'Low stock', variant: 'warning' };
+    return { label: t('inventory.lowStock'), variant: 'warning' };
   }
-  return { label: 'In stock', variant: 'success' };
+  return { label: t('inventory.inStock'), variant: 'success' };
 }

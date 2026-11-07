@@ -3,12 +3,13 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import { useLocale, useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { ArrowLeft, BadgeCheck, FileText, Truck } from 'lucide-react';
 import { Badge, Button, EmptyState, Input, Modal, PriceDisplay, Select, TechnicalCode, useToast } from '@/components/ui';
 import { AdminPageHeader, OrderStatusBadge, PaymentStatusBadge, AdminSurface } from '@/components/admin/admin-primitives';
 import { confirmAdminOrderPayment, setAdminOrderStatus, setAdminPaymentStatus } from '@/lib/admin/actions';
-import { formatOrderDate, fulfillmentStatusLabel, orderStatusLabel, orderTotals, orderUnitCount, paymentStatusLabel } from '@/lib/account/order-utils';
+import { formatOrderDate, fulfillmentStatusLabel, orderPaymentMethodLabel, orderStatusLabel, orderTotals, orderUnitCount, paymentStatusLabel } from '@/lib/account/order-utils';
 import { formatPrice } from '@/lib/utils';
 import type { Order, OrderStatus, PaymentStatus } from '@/types';
 
@@ -24,6 +25,9 @@ function readPaymentStatus(value: string): PaymentStatus {
 
 export function AdminOrderDossier({ order }: { order: Order | null }) {
   const router = useRouter();
+  const t = useTranslations('admin.orderDossier');
+  const tOrders = useTranslations('orders');
+  const locale = useLocale();
   const { addToast } = useToast();
   const [isStatusOpen, setIsStatusOpen] = useState(false);
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
@@ -38,19 +42,21 @@ export function AdminOrderDossier({ order }: { order: Order | null }) {
   if (!order) {
     return (
       <>
-        <AdminPageHeader eyebrow="OPERATIONS // 01 · ORDER" title="Order not found" description="No order matches this identifier." />
+        <AdminPageHeader eyebrow={t('nfEyebrow')} title={t('nfTitle')} description={t('nfDescription')} />
         <EmptyState
-          code="ORDER // NOT FOUND"
-          title="No matching order."
-          description="Check the order number or return to the list."
+          code={t('nfCode')}
+          title={t('nfEmptyTitle')}
+          description={t('nfEmptyDescription')}
           icon={<FileText className="h-5 w-5" aria-hidden="true" />}
-          primaryAction={<Link href="/admin/orders" className="inline-flex min-h-11 items-center border border-foreground bg-foreground px-4 font-mono text-[9px] uppercase tracking-[0.12em] text-background">Back to orders</Link>}
+          primaryAction={<Link href="/admin/orders" className="inline-flex min-h-11 items-center border border-foreground bg-foreground px-4 font-mono text-[9px] uppercase tracking-[0.12em] text-background">{t('backToOrders')}</Link>}
         />
       </>
     );
   }
 
   const totals = orderTotals(order);
+  const methodLabel = orderPaymentMethodLabel(tOrders, order);
+  const placedDate = formatOrderDate(order.createdAt, locale, t('notRecorded'));
   const isPendingSettlement = order.status === 'pending_settlement';
   const shipmentStatusRecorded = order.status === 'shipped' || order.status === 'delivered';
   const timeline = [...order.timeline].filter((event) => event.completed);
@@ -66,10 +72,10 @@ export function AdminOrderDossier({ order }: { order: Order | null }) {
     );
     setIsSaving(false);
     if (!result.ok) {
-      addToast({ type: 'error', title: 'Could not update order', description: result.error });
+      addToast({ type: 'error', title: t('toastUpdateError'), description: result.error });
       return;
     }
-    addToast({ type: 'success', title: 'Order updated', description: `${order.orderNumber} is now ${orderStatusLabel(result.data.status)}.` });
+    addToast({ type: 'success', title: t('toastUpdated'), description: t('toastUpdatedBody', { number: order.orderNumber, status: orderStatusLabel(tOrders, result.data.status) }) });
     setIsStatusOpen(false);
     setStatusNote('');
     router.refresh();
@@ -80,10 +86,10 @@ export function AdminOrderDossier({ order }: { order: Order | null }) {
     const result = await confirmAdminOrderPayment(order.id, paymentReference.trim() || undefined);
     setIsSaving(false);
     if (!result.ok) {
-      addToast({ type: 'error', title: 'Could not confirm payment', description: result.error });
+      addToast({ type: 'error', title: t('toastPaymentError'), description: result.error });
       return;
     }
-    addToast({ type: 'success', title: 'Payment confirmed', description: `${order.orderNumber} is marked paid and moved to processing.` });
+    addToast({ type: 'success', title: t('toastPaymentConfirmed'), description: t('toastPaymentConfirmedBody', { number: order.orderNumber }) });
     setIsPaymentOpen(false);
     setPaymentReference('');
     router.refresh();
@@ -98,10 +104,10 @@ export function AdminOrderDossier({ order }: { order: Order | null }) {
     const result = await setAdminPaymentStatus(order.id, nextPayment);
     setIsSaving(false);
     if (!result.ok) {
-      addToast({ type: 'error', title: 'Could not update payment', description: result.error });
+      addToast({ type: 'error', title: t('toastPaymentUpdateError'), description: result.error });
       return;
     }
-    addToast({ type: 'success', title: 'Payment status updated', description: `${order.orderNumber}: ${paymentStatusLabel(result.data.paymentStatus)}.` });
+    addToast({ type: 'success', title: t('toastPaymentUpdated'), description: t('toastPaymentUpdatedBody', { number: order.orderNumber, status: paymentStatusLabel(tOrders, result.data.paymentStatus) }) });
     setIsPaymentOpen(false);
     router.refresh();
   };
@@ -109,18 +115,18 @@ export function AdminOrderDossier({ order }: { order: Order | null }) {
   return (
     <main id="main-content" className="min-w-0">
       <AdminPageHeader
-        eyebrow={`OPERATIONS // 01 · ${order.allocationReference ?? 'ORDER'}`}
+        eyebrow={t('eyebrow', { reference: order.allocationReference ?? t('order') })}
         title={order.orderNumber}
-        description={`Placed ${formatOrderDate(order.createdAt)} · ${order.paymentMethod}. Confirm payment, update the fulfilment status, and record carrier and tracking details here.`}
+        description={t('description', { date: placedDate, method: methodLabel })}
         actions={
           <>
             {order.paymentStatus !== 'paid' && order.status !== 'cancelled' && (
               <Button type="button" variant="primary" size="md" leftIcon={<BadgeCheck className="h-3.5 w-3.5" aria-hidden="true" />} onClick={() => { setNextPayment('paid'); setIsPaymentOpen(true); }}>
-                Confirm payment
+                {t('confirmPayment')}
               </Button>
             )}
             <Link href="/admin/orders" className="inline-flex min-h-11 items-center gap-2 border border-border bg-surface px-4 font-mono text-[9px] uppercase tracking-[0.12em] text-foreground-muted hover:border-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground">
-              <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" /> All orders
+              <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" /> {t('allOrders')}
             </Link>
           </>
         }
@@ -128,54 +134,54 @@ export function AdminOrderDossier({ order }: { order: Order | null }) {
 
       {isPendingSettlement && (
         <div role="status" aria-live="polite" className="mb-5 border border-warning/30 bg-warning-surface/50 p-4">
-          <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-warning">Awaiting confirmation</p>
+          <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-warning">{t('awaitingTitle')}</p>
           <p className="mt-2 text-small leading-relaxed text-foreground-muted">
-            The customer chose <strong className="text-foreground">{order.paymentMethod}</strong>. Contact them to confirm the order, then press “Confirm payment” once cash is collected or the transfer has arrived. Stock was reserved when the order was placed.
+            {t.rich('awaitingBody', { method: methodLabel, strong: (chunks) => <strong className="text-foreground">{chunks}</strong> })}
           </p>
         </div>
       )}
 
       <div className="mb-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <OrderMeta label="Placed" value={formatOrderDate(order.createdAt)} />
-        <OrderMeta label="Order status" value={orderStatusLabel(order.status)} />
-        <OrderMeta label="Payment" value={paymentStatusLabel(order.paymentStatus)} />
-        <OrderMeta label="Fulfilment" value={fulfillmentStatusLabel(order.status)} />
+        <OrderMeta label={t('placed')} value={placedDate} />
+        <OrderMeta label={t('orderStatus')} value={orderStatusLabel(tOrders, order.status)} />
+        <OrderMeta label={t('payment')} value={paymentStatusLabel(tOrders, order.paymentStatus)} />
+        <OrderMeta label={t('fulfilment')} value={fulfillmentStatusLabel(tOrders, order.status)} />
       </div>
 
       <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-12">
         <div className="min-w-0 space-y-4 xl:col-span-8">
           <AdminSurface className="p-4 sm:p-5">
             <div className="mb-4 flex flex-wrap items-end justify-between gap-3 border-b border-border pb-3">
-              <div><TechnicalCode>01 // CUSTOMER</TechnicalCode><h2 className="mt-1 font-display text-lg text-foreground">Customer &amp; contact</h2></div>
-              <Badge variant="outline">{order.customerId === 'guest' ? 'GUEST CHECKOUT' : 'ACCOUNT'}</Badge>
+              <div><TechnicalCode>{t('customerCode')}</TechnicalCode><h2 className="mt-1 font-display text-lg text-foreground">{t('customerTitle')}</h2></div>
+              <Badge variant="outline">{order.customerId === 'guest' ? t('guestCheckout') : t('account')}</Badge>
             </div>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <InfoBlock label="Order number" value={order.orderNumber} />
-              <InfoBlock label="Reference" value={order.allocationReference ?? order.id} />
-              <InfoBlock label="Name" value={order.customerName || 'Not recorded'} />
-              <InfoBlock label="Email" value={order.customerEmail || 'Not recorded'} />
-              <InfoBlock label="Phone" value={order.customerPhone || 'Not recorded'} />
-              <InfoBlock label="Payment method" value={order.paymentMethod} />
+              <InfoBlock label={t('orderNumber')} value={order.orderNumber} />
+              <InfoBlock label={t('reference')} value={order.allocationReference ?? order.id} />
+              <InfoBlock label={t('name')} value={order.customerName || t('notRecorded')} />
+              <InfoBlock label={t('email')} value={order.customerEmail || t('notRecorded')} />
+              <InfoBlock label={t('phone')} value={order.customerPhone || t('notRecorded')} />
+              <InfoBlock label={t('paymentMethod')} value={methodLabel} />
               {order.customerId !== 'guest' && (
                 <div className="sm:col-span-2">
                   <Link href={`/admin/customers/${encodeURIComponent(order.customerId)}`} className="inline-flex min-h-11 items-center gap-2 border-b border-border px-1 font-mono text-[9px] uppercase tracking-[0.1em] text-foreground-muted hover:text-foreground">
-                    Open customer profile <ArrowLeft className="h-3 w-3 rotate-180" aria-hidden="true" />
+                    {t('openCustomer')} <ArrowLeft className="h-3 w-3 rotate-180" aria-hidden="true" />
                   </Link>
                 </div>
               )}
-              {order.notes && <div className="sm:col-span-2"><InfoBlock label="Customer note" value={order.notes} /></div>}
+              {order.notes && <div className="sm:col-span-2"><InfoBlock label={t('customerNote')} value={order.notes} /></div>}
             </div>
           </AdminSurface>
 
           <AdminSurface className="p-4 sm:p-5">
             <div className="mb-4 flex flex-wrap items-end justify-between gap-2 border-b border-border pb-3">
-              <div><TechnicalCode>02 // ITEMS</TechnicalCode><h2 className="mt-1 font-display text-lg text-foreground">Order items</h2></div>
-              <span className="font-mono text-[9px] uppercase text-foreground-subtle">{orderUnitCount(order)} units</span>
+              <div><TechnicalCode>{t('itemsCode')}</TechnicalCode><h2 className="mt-1 font-display text-lg text-foreground">{t('itemsTitle')}</h2></div>
+              <span className="font-mono text-[9px] uppercase text-foreground-subtle">{t('units', { count: orderUnitCount(order) })}</span>
             </div>
             <ul className="divide-y divide-border">
               {order.items.map((item) => (
                 <li key={item.id} className="grid min-w-0 grid-cols-[64px_minmax(0,1fr)] gap-3 py-4 sm:grid-cols-[84px_minmax(0,1fr)_auto] sm:items-center sm:gap-4">
-                  <Link href={`/admin/products/${encodeURIComponent(item.productId)}`} aria-label={`Open product ${item.productName}`} className="relative aspect-[4/5] overflow-hidden border border-border bg-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground">
+                  <Link href={`/admin/products/${encodeURIComponent(item.productId)}`} aria-label={t('openProduct', { name: item.productName })} className="relative aspect-[4/5] overflow-hidden border border-border bg-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground">
                     <Image src={item.image} alt="" fill sizes="84px" className="object-cover" />
                   </Link>
                   <div className="min-w-0">
@@ -185,7 +191,7 @@ export function AdminOrderDossier({ order }: { order: Order | null }) {
                       {item.selectedFinish?.name ?? item.variantName}
                       {item.selectedOption ? ` / ${item.selectedOption.label}` : ''}
                     </p>
-                    <p className="mt-1 font-mono text-[9px] uppercase tracking-[0.08em] text-foreground-subtle">Qty {item.quantity} × {formatPrice(item.unitPrice)}</p>
+                    <p className="mt-1 font-mono text-[9px] uppercase tracking-[0.08em] text-foreground-subtle">{t('qty', { quantity: item.quantity, price: formatPrice(item.unitPrice) })}</p>
                   </div>
                   <span className="font-mono text-[11px] tabular-nums text-foreground sm:text-end">{formatPrice(item.totalPrice)}</span>
                 </li>
@@ -195,26 +201,26 @@ export function AdminOrderDossier({ order }: { order: Order | null }) {
 
           <AdminSurface className="p-4 sm:p-5">
             <div className="mb-4 flex flex-wrap items-end justify-between gap-2 border-b border-border pb-3">
-              <div><TechnicalCode>03 // DELIVERY</TechnicalCode><h2 className="mt-1 font-display text-lg text-foreground">Delivery &amp; tracking</h2></div>
+              <div><TechnicalCode>{t('deliveryCode')}</TechnicalCode><h2 className="mt-1 font-display text-lg text-foreground">{t('deliveryTitle')}</h2></div>
               <Truck className="h-4 w-4 text-foreground-subtle" aria-hidden="true" />
             </div>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
-                <p className="font-mono text-[8px] uppercase tracking-[0.1em] text-foreground-subtle">Shipping method</p>
-                <p className="mt-1 text-small text-foreground">{order.shippingMethod?.name ?? 'Not recorded'}</p>
-                {order.shippingMethod?.estimatedWindow && <p className="mt-1 text-[10px] text-foreground-muted">Window // {order.shippingMethod.estimatedWindow}</p>}
+                <p className="font-mono text-[8px] uppercase tracking-[0.1em] text-foreground-subtle">{t('shippingMethod')}</p>
+                <p className="mt-1 text-small text-foreground">{order.shippingMethod?.name ?? t('notRecorded')}</p>
+                {order.shippingMethod?.estimatedWindow && <p className="mt-1 text-[10px] text-foreground-muted">{t('window', { window: order.shippingMethod.estimatedWindow })}</p>}
               </div>
               <div>
-                <p className="font-mono text-[8px] uppercase tracking-[0.1em] text-foreground-subtle">Tracking</p>
+                <p className="font-mono text-[8px] uppercase tracking-[0.1em] text-foreground-subtle">{t('tracking')}</p>
                 {order.trackingNumber ? (
                   <p className="mt-1 break-all font-mono text-small text-foreground">{order.trackingNumber}</p>
                 ) : (
-                  <p className="mt-1 text-small text-foreground-muted">{shipmentStatusRecorded ? 'No tracking number recorded.' : 'Add carrier and tracking when you mark the order shipped.'}</p>
+                  <p className="mt-1 text-small text-foreground-muted">{shipmentStatusRecorded ? t('noTracking') : t('addTracking')}</p>
                 )}
-                {order.carrier && <p className="mt-1 text-[10px] text-foreground-subtle">Carrier // {order.carrier}</p>}
+                {order.carrier && <p className="mt-1 text-[10px] text-foreground-subtle">{t('carrier', { carrier: order.carrier })}</p>}
               </div>
               <div className="sm:col-span-2">
-                <p className="font-mono text-[8px] uppercase tracking-[0.1em] text-foreground-subtle">Delivery address</p>
+                <p className="font-mono text-[8px] uppercase tracking-[0.1em] text-foreground-subtle">{t('deliveryAddress')}</p>
                 <address className="mt-2 not-italic text-[10px] leading-relaxed text-foreground-muted">
                   <span className="block">{order.shippingAddress.firstName} {order.shippingAddress.lastName}</span>
                   {order.shippingAddress.company && <span className="block">{order.shippingAddress.company}</span>}
@@ -228,7 +234,7 @@ export function AdminOrderDossier({ order }: { order: Order | null }) {
           </AdminSurface>
 
           <AdminSurface className="p-4 sm:p-5">
-            <div className="mb-4 border-b border-border pb-3"><TechnicalCode>04 // TIMELINE</TechnicalCode><h2 className="mt-1 font-display text-lg text-foreground">Order history</h2></div>
+            <div className="mb-4 border-b border-border pb-3"><TechnicalCode>{t('timelineCode')}</TechnicalCode><h2 className="mt-1 font-display text-lg text-foreground">{t('timelineTitle')}</h2></div>
             {timeline.length ? (
               <ol className="space-y-0 border-s border-border ps-4">
                 {timeline.map((event) => (
@@ -236,50 +242,50 @@ export function AdminOrderDossier({ order }: { order: Order | null }) {
                     <span className="absolute -start-[1.32rem] top-1 h-2 w-2 rounded-full border border-accent bg-accent" aria-hidden="true" />
                     <p className="break-words font-mono text-[9px] uppercase tracking-[0.1em] text-foreground">{event.status}</p>
                     <p className="mt-1 text-[10px] leading-relaxed text-foreground-muted">{event.description}</p>
-                    <time dateTime={event.timestamp} className="mt-1 block font-mono text-[8px] uppercase tracking-[0.08em] text-foreground-subtle">{formatOrderDate(event.timestamp)}</time>
+                    <time dateTime={event.timestamp} className="mt-1 block font-mono text-[8px] uppercase tracking-[0.08em] text-foreground-subtle">{formatOrderDate(event.timestamp, locale, t('notRecorded'))}</time>
                   </li>
                 ))}
               </ol>
-            ) : <p className="text-small text-foreground-muted">No events recorded yet.</p>}
+            ) : <p className="text-small text-foreground-muted">{t('noEvents')}</p>}
           </AdminSurface>
         </div>
 
         <aside className="min-w-0 space-y-4 xl:col-span-4">
           <AdminSurface className="p-4 sm:p-5">
-            <div className="mb-4 border-b border-border pb-3"><TechnicalCode>05 // PAYMENT</TechnicalCode><h2 className="mt-1 font-display text-lg text-foreground">Payment</h2></div>
-            <div className="flex flex-wrap gap-2"><PaymentStatusBadge status={order.paymentStatus} /><Badge variant="outline">{order.paymentMethod}</Badge></div>
+            <div className="mb-4 border-b border-border pb-3"><TechnicalCode>{t('paymentCode')}</TechnicalCode><h2 className="mt-1 font-display text-lg text-foreground">{t('paymentTitle')}</h2></div>
+            <div className="flex flex-wrap gap-2"><PaymentStatusBadge status={order.paymentStatus} /><Badge variant="outline">{methodLabel}</Badge></div>
             <p className="mt-3 text-[10px] leading-relaxed text-foreground-muted">
               {order.paymentStatus === 'paid'
-                ? 'Payment has been confirmed. Use “Adjust payment” only to record a refund.'
-                : 'Confirm payment once the cash has been collected or the bank transfer is visible on the account statement.'}
+                ? t('paidNote')
+                : t('unpaidNote')}
             </p>
             <div className="mt-4 flex flex-col gap-2">
               {order.paymentStatus !== 'paid' && (
-                <Button type="button" variant="primary" className="w-full" onClick={() => { setNextPayment('paid'); setIsPaymentOpen(true); }}>Confirm payment</Button>
+                <Button type="button" variant="primary" className="w-full" onClick={() => { setNextPayment('paid'); setIsPaymentOpen(true); }}>{t('confirmPayment')}</Button>
               )}
-              <Button type="button" variant="outline" className="w-full" onClick={() => { setNextPayment(order.paymentStatus); setIsPaymentOpen(true); }}>Adjust payment status</Button>
+              <Button type="button" variant="outline" className="w-full" onClick={() => { setNextPayment(order.paymentStatus); setIsPaymentOpen(true); }}>{t('adjustPayment')}</Button>
             </div>
           </AdminSurface>
 
           <AdminSurface className="p-4 sm:p-5">
-            <div className="mb-4 border-b border-border pb-3"><TechnicalCode>06 // TOTALS</TechnicalCode><h2 className="mt-1 font-display text-lg text-foreground">Order value</h2></div>
+            <div className="mb-4 border-b border-border pb-3"><TechnicalCode>{t('totalsCode')}</TechnicalCode><h2 className="mt-1 font-display text-lg text-foreground">{t('totalsTitle')}</h2></div>
             <dl className="space-y-3 border-y border-border py-4">
-              <MoneyRow label="Subtotal" value={formatPrice(totals.subtotal)} />
-              {totals.discountAmount > 0 && <MoneyRow label={`Discount${order.discountCode ? ` // ${order.discountCode}` : ''}`} value={`−${formatPrice(totals.discountAmount)}`} />}
-              <MoneyRow label="Delivery" value={totals.shippingCost === 0 ? 'FREE' : formatPrice(totals.shippingCost)} />
-              <MoneyRow label="Tax" value={totals.taxAmount === 0 ? 'Included' : formatPrice(totals.taxAmount)} />
+              <MoneyRow label={t('subtotal')} value={formatPrice(totals.subtotal)} />
+              {totals.discountAmount > 0 && <MoneyRow label={`${t('discount')}${order.discountCode ? ` // ${order.discountCode}` : ''}`} value={`−${formatPrice(totals.discountAmount)}`} />}
+              <MoneyRow label={t('delivery')} value={totals.shippingCost === 0 ? t('free') : formatPrice(totals.shippingCost)} />
+              <MoneyRow label={t('tax')} value={totals.taxAmount === 0 ? t('included') : formatPrice(totals.taxAmount)} />
             </dl>
             <div className="flex items-end justify-between gap-3 pt-4">
-              <div><p className="font-display text-base text-foreground">Total</p><p className="mt-1 font-mono text-[8px] uppercase tracking-[0.1em] text-foreground-subtle">{`${paymentStatusLabel(order.paymentStatus)} // ${order.currency}`}</p></div>
+              <div><p className="font-display text-base text-foreground">{t('total')}</p><p className="mt-1 font-mono text-[8px] uppercase tracking-[0.1em] text-foreground-subtle">{`${paymentStatusLabel(tOrders, order.paymentStatus)} // ${order.currency}`}</p></div>
               <PriceDisplay price={totals.total} size="xl" />
             </div>
           </AdminSurface>
 
           <AdminSurface className="p-4 sm:p-5">
-            <div className="mb-4 border-b border-border pb-3"><TechnicalCode>07 // FULFILMENT</TechnicalCode><h2 className="mt-1 font-display text-lg text-foreground">Order status</h2></div>
+            <div className="mb-4 border-b border-border pb-3"><TechnicalCode>{t('fulfilmentCode')}</TechnicalCode><h2 className="mt-1 font-display text-lg text-foreground">{t('fulfilmentTitle')}</h2></div>
             <OrderStatusBadge status={order.status} />
-            <p className="mt-3 text-[10px] leading-relaxed text-foreground-muted">Move the order through processing, craft &amp; calibration, shipped and delivered. Each change is recorded in the timeline and visible to the customer.</p>
-            <Button type="button" variant="outline" className="mt-4 w-full" onClick={() => { setNextStatus(order.status); setCarrier(order.carrier ?? ''); setTrackingNumber(order.trackingNumber ?? ''); setIsStatusOpen(true); }}>Update status</Button>
+            <p className="mt-3 text-[10px] leading-relaxed text-foreground-muted">{t('fulfilmentNote')}</p>
+            <Button type="button" variant="outline" className="mt-4 w-full" onClick={() => { setNextStatus(order.status); setCarrier(order.carrier ?? ''); setTrackingNumber(order.trackingNumber ?? ''); setIsStatusOpen(true); }}>{t('updateStatus')}</Button>
           </AdminSurface>
         </aside>
       </div>
@@ -287,22 +293,22 @@ export function AdminOrderDossier({ order }: { order: Order | null }) {
       <Modal
         isOpen={isStatusOpen}
         onClose={() => !isSaving && setIsStatusOpen(false)}
-        title="Update order status"
-        code={`ORDER // ${order.orderNumber}`}
+        title={t('statusModalTitle')}
+        code={t('statusModalCode', { number: order.orderNumber })}
         size="md"
-        footer={<><Button type="button" variant="ghost" disabled={isSaving} onClick={() => setIsStatusOpen(false)}>Cancel</Button><Button type="button" variant="primary" isLoading={isSaving} onClick={confirmStatusChange}>Save status</Button></>}
+        footer={<><Button type="button" variant="ghost" disabled={isSaving} onClick={() => setIsStatusOpen(false)}>{t('cancel')}</Button><Button type="button" variant="primary" isLoading={isSaving} onClick={confirmStatusChange}>{t('saveStatus')}</Button></>}
       >
         <div className="space-y-4">
-          <Select label="New status" value={nextStatus} onChange={(event) => setNextStatus(readOrderStatus(event.target.value))} options={ORDER_STATUSES.map((status) => ({ label: orderStatusLabel(status), value: status }))} />
-          <Input label="Note for the timeline (optional)" value={statusNote} onChange={(event) => setStatusNote(event.target.value)} placeholder="e.g. Confirmed by phone with the customer" />
+          <Select label={t('newStatus')} value={nextStatus} onChange={(event) => setNextStatus(readOrderStatus(event.target.value))} options={ORDER_STATUSES.map((status) => ({ label: orderStatusLabel(tOrders, status), value: status }))} />
+          <Input label={t('note')} value={statusNote} onChange={(event) => setStatusNote(event.target.value)} placeholder={t('notePlaceholder')} />
           {(nextStatus === 'shipped' || nextStatus === 'delivered') && (
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <Input label="Carrier" value={carrier} onChange={(event) => setCarrier(event.target.value)} placeholder="DHL, Aramex…" />
-              <Input label="Tracking number" value={trackingNumber} onChange={(event) => setTrackingNumber(event.target.value)} />
+              <Input label={t('carrierLabel')} value={carrier} onChange={(event) => setCarrier(event.target.value)} placeholder={t('carrierPlaceholder')} />
+              <Input label={t('trackingNumber')} value={trackingNumber} onChange={(event) => setTrackingNumber(event.target.value)} />
             </div>
           )}
           {nextStatus === 'cancelled' && (
-            <p className="border border-warning/30 bg-warning-surface/50 p-3 text-[10px] leading-relaxed text-foreground-muted">Cancelling releases the reserved stock back to inventory.</p>
+            <p className="border border-warning/30 bg-warning-surface/50 p-3 text-[10px] leading-relaxed text-foreground-muted">{t('cancelNote')}</p>
           )}
         </div>
       </Modal>
@@ -310,26 +316,26 @@ export function AdminOrderDossier({ order }: { order: Order | null }) {
       <Modal
         isOpen={isPaymentOpen}
         onClose={() => !isSaving && setIsPaymentOpen(false)}
-        title={nextPayment === 'paid' && order.paymentStatus !== 'paid' ? 'Confirm payment' : 'Adjust payment status'}
-        code={`PAYMENT // ${order.orderNumber}`}
+        title={nextPayment === 'paid' && order.paymentStatus !== 'paid' ? t('confirmPayment') : t('adjustPayment')}
+        code={t('paymentModalCode', { number: order.orderNumber })}
         size="md"
         footer={
           <>
-            <Button type="button" variant="ghost" disabled={isSaving} onClick={() => setIsPaymentOpen(false)}>Cancel</Button>
+            <Button type="button" variant="ghost" disabled={isSaving} onClick={() => setIsPaymentOpen(false)}>{t('cancel')}</Button>
             {nextPayment === 'paid' && order.paymentStatus !== 'paid' ? (
-              <Button type="button" variant="primary" isLoading={isSaving} onClick={confirmPayment}>Mark as paid</Button>
+              <Button type="button" variant="primary" isLoading={isSaving} onClick={confirmPayment}>{t('markPaid')}</Button>
             ) : (
-              <Button type="button" variant="primary" isLoading={isSaving} disabled={nextPayment === order.paymentStatus} onClick={changePaymentStatus}>Save</Button>
+              <Button type="button" variant="primary" isLoading={isSaving} disabled={nextPayment === order.paymentStatus} onClick={changePaymentStatus}>{t('save')}</Button>
             )}
           </>
         }
       >
         <div className="space-y-4">
-          <Select label="Payment status" value={nextPayment} onChange={(event) => setNextPayment(readPaymentStatus(event.target.value))} options={PAYMENT_STATUSES.map((status) => ({ label: paymentStatusLabel(status), value: status }))} />
+          <Select label={t('paymentStatus')} value={nextPayment} onChange={(event) => setNextPayment(readPaymentStatus(event.target.value))} options={PAYMENT_STATUSES.map((status) => ({ label: paymentStatusLabel(tOrders, status), value: status }))} />
           {nextPayment === 'paid' && order.paymentStatus !== 'paid' && (
             <>
-              <Input label="Reference (optional)" value={paymentReference} onChange={(event) => setPaymentReference(event.target.value)} placeholder="Bank transfer reference or receipt number" />
-              <p className="text-[10px] leading-relaxed text-foreground-muted">Marking the order paid records the {formatPrice(totals.total)} payment via {order.paymentMethod} and moves the order to processing.</p>
+              <Input label={t('referenceOptional')} value={paymentReference} onChange={(event) => setPaymentReference(event.target.value)} placeholder={t('referencePlaceholder')} />
+              <p className="text-[10px] leading-relaxed text-foreground-muted">{t('markPaidNote', { amount: formatPrice(totals.total), method: methodLabel })}</p>
             </>
           )}
         </div>
