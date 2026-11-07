@@ -1,9 +1,11 @@
+import { useTranslations } from 'next-intl';
 import { Container } from '@/components/layout';
 import { Skeleton } from '@/components/ui';
 
 export function WishlistContentSkeleton() {
+  const t = useTranslations('wishlist');
   return (
-    <div role="status" aria-label="Loading saved archive" aria-busy="true" className="space-y-5">
+    <div role="status" aria-label={t('loading')} aria-busy="true" className="space-y-5">
       <div className="flex items-end justify-between border-b border-border pb-3">
         <div className="space-y-2">
           <Skeleton className="h-2.5 w-28" />

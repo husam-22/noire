@@ -1240,5 +1240,98 @@
         "lightingDesc": "Architectural and ambient illumination"
       }
     }
+  },
+  "wishlist": {
+    "loading": "Loading wishlist",
+    "header": {
+      "home": "Home",
+      "crumb": "Wishlist",
+      "eyebrow": "Your saved products",
+      "title": "Wishlist",
+      "intro": "Products you've set aside for a closer look. Pick an exact finish and configuration when you're ready to add them to your bag.",
+      "saved": "Saved products",
+      "inBag": "Items in bag",
+      "continue": "Continue exploring",
+      "clear": "Clear wishlist"
+    },
+    "grid": {
+      "code": "Saved // 01",
+      "title": "Saved products",
+      "count": "{count, plural, one {# ITEM} other {# ITEMS}}"
+    },
+    "empty": {
+      "code": "WISHLIST // EMPTY",
+      "title": "Nothing saved yet.",
+      "description": "Save a product from the NOIRÉ shop and it will be kept here for your next visit. Your wishlist stays private to this browser.",
+      "explore": "Explore the shop",
+      "home": "Return home"
+    },
+    "clearModal": {
+      "title": "Clear the wishlist?",
+      "code": "CONFIRMATION",
+      "keep": "Keep wishlist",
+      "confirm": "Confirm clear",
+      "body": "This removes every saved product from your wishlist immediately. Your bag and its configurations will not be changed. You can restore the list from the Undo action in the confirmation toast."
+    },
+    "recent": {
+      "code": "Recently viewed // 02",
+      "title": "Recently viewed",
+      "viewAll": "View all products",
+      "empty": "No recently viewed products // Browse the shop to start.",
+      "open": "Open {name}",
+      "badge": "RECENT // {index}",
+      "quickView": "Quick view {name}",
+      "view": "View"
+    },
+    "item": {
+      "open": "Open {name}",
+      "serial": "SAVED // {index}",
+      "from": "From",
+      "finish": "Finish",
+      "selectToAdd": " // SELECT TO ADD",
+      "unavailableColor": "{color} // CURRENTLY UNAVAILABLE",
+      "selectFinish": "Select a finish to continue.",
+      "noFinish": "No active finish // CURRENTLY UNAVAILABLE",
+      "configuration": "Configuration",
+      "plus": "plus ",
+      "optionUnavailableAria": ", currently unavailable",
+      "unavailable": "CURRENTLY UNAVAILABLE",
+      "nextBatch": "NEXT BATCH // {estimate}",
+      "ready": "READY TO SHIP // {estimate}",
+      "quantity": "Quantity",
+      "alreadyInBag": "ALREADY IN BAG // {count, plural, one {# UNIT} other {# UNITS}}",
+      "limitReached": "LIMIT REACHED // {count} UNITS",
+      "inBagOther": "IN BAG // OTHER FINISH OR CONFIGURATION",
+      "addAnother": "Add another unit",
+      "reserve": "Reserve batch",
+      "addToBag": "Add to bag",
+      "quickView": "Quick view",
+      "chooseConfig": "Choose an available finish and configuration to continue.",
+      "removeAria": "Remove {name} from the wishlist",
+      "remove": "Remove from wishlist"
+    }
+  },
+  "commerceToasts": {
+    "addedToBag": "{name} added to bag",
+    "openBag": "Open Bag",
+    "removed": "{name} removed",
+    "removedFromBag": "{variant} removed from your bag.",
+    "undo": "Undo",
+    "savedForLater": "{name} saved for later",
+    "savedForLaterBody": "Moved from your bag to your wishlist.",
+    "bagCleared": "Bag cleared",
+    "bagClearedBody": "All products have been removed from your bag.",
+    "wishlistRemoved": "{name} removed from wishlist",
+    "wishlistAdded": "{name} saved to wishlist",
+    "wishlistRemovedBody": "The product has been removed from your wishlist.",
+    "wishlistCleared": "Wishlist cleared",
+    "wishlistClearedBody": "{count, plural, one {# saved product} other {# saved products}} removed from your wishlist.",
+    "codeApplied": "Code {code} applied",
+    "codeRemoved": "Code {code} removed",
+    "codeRemovedBody": "The discount code has been removed from your bag.",
+    "fallbackShipping": "Standard delivery",
+    "fallbackCarrier": "Courier",
+    "fallbackWindow": "5–7 business days",
+    "fallbackDispatch": "1–2 business days"
   }
 }

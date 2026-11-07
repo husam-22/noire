@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 import { Link } from '@/i18n/navigation';
+import { useTranslations } from 'next-intl';
 import { motion, useReducedMotion } from 'framer-motion';
 import { ArrowUpRight, Eye, Heart, ShoppingBag } from 'lucide-react';
 import type { CartItem, Product, ProductColorVariant, ProductOptionVariant } from '@/types';
@@ -43,6 +44,7 @@ export function WishlistItem({
   onQuickInspect,
   onAllocate,
 }: WishlistItemProps) {
+  const t = useTranslations('wishlist.item');
   const prefersReducedMotion = Boolean(useReducedMotion());
   const [selectedColorId, setSelectedColorId] = useState(() =>
     product.colors.length === 1 ? product.colors[0].id : ''
@@ -113,7 +115,7 @@ export function WishlistItem({
       <div className={`relative overflow-hidden border-b border-border bg-surface-muted ${featured ? 'md:col-span-7 md:border-b-0 md:border-e' : ''}`}>
         <Link
           href={`/product/${product.slug}`}
-          aria-label={`Open product dossier for ${product.name}`}
+          aria-label={t('open', { name: product.name })}
           className={`relative block w-full overflow-hidden focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-foreground ${featured ? 'aspect-[4/3]' : 'aspect-[4/5]'}`}
         >
           <Image
@@ -126,7 +128,7 @@ export function WishlistItem({
         </Link>
         <div className="pointer-events-none absolute start-3 end-3 top-3 flex items-start justify-between gap-2 sm:start-4 sm:end-4 sm:top-4">
           <span className="border border-border bg-background/90 px-2 py-1 font-mono text-[9px] uppercase tracking-[0.13em] text-foreground">
-            ARCHIVE // {String(serial).padStart(2, '0')}
+            {t('serial', { index: String(serial).padStart(2, '0') })}
           </span>
           <div className="pointer-events-auto">
             <ProductBadge type={product.badge} label={product.badgeLabel} />
@@ -167,7 +169,7 @@ export function WishlistItem({
             <div className="flex flex-wrap items-baseline gap-2">
               {needsOptionSelection && (
                 <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-foreground-subtle">
-                  From
+                  {t('from')}
                 </span>
               )}
               <PriceDisplay
@@ -187,7 +189,7 @@ export function WishlistItem({
             {product.colors.length > 0 ? (
               <fieldset>
                 <legend className="mb-2 font-mono text-[10px] uppercase tracking-[0.13em] text-foreground-muted">
-                  Finish{needsFinishSelection ? ' // SELECT TO ALLOCATE' : ''}
+                  {t('finish')}{needsFinishSelection ? t('selectToAdd') : ''}
                 </legend>
                 <ColorSwatchGroup
                   colors={product.colors}
@@ -198,25 +200,25 @@ export function WishlistItem({
                 />
                 {selectedColor && !selectedColor.inStock && (
                   <p className="mt-2 font-mono text-[9px] uppercase tracking-[0.12em] text-danger">
-                    {`${selectedColor.name} // CURRENTLY UNAVAILABLE`}
+                    {t('unavailableColor', { color: selectedColor.name })}
                   </p>
                 )}
                 {needsFinishSelection && (
                   <p className="mt-2 text-[10px] text-foreground-subtle">
-                    Select a finish for this private allocation.
+                    {t('selectFinish')}
                   </p>
                 )}
               </fieldset>
             ) : (
               <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-danger">
-                No active finish // CURRENTLY UNAVAILABLE
+                {t('noFinish')}
               </p>
             )}
 
             {hasOptions && (
               <fieldset className="space-y-2">
                 <legend className="font-mono text-[10px] uppercase tracking-[0.13em] text-foreground-muted">
-                  Configuration{needsOptionSelection ? ' // SELECT TO ALLOCATE' : ''}
+                  {t('configuration')}{needsOptionSelection ? t('selectToAdd') : ''}
                 </legend>
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                   {options.map((option) => {
@@ -234,7 +236,7 @@ export function WishlistItem({
                           disabled={!option.inStock}
                           onChange={() => setSelectedOptionId(option.id)}
                           className="mt-0.5 h-4 w-4 shrink-0 accent-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground"
-                          aria-label={`${option.label}${option.priceDelta ? `, ${option.priceDelta > 0 ? 'plus ' : ''}${formatPrice(option.priceDelta)}` : ''}${!option.inStock ? ', currently unavailable' : ''}`}
+                          aria-label={`${option.label}${option.priceDelta ? `, ${option.priceDelta > 0 ? t('plus') : ''}${formatPrice(option.priceDelta)}` : ''}${!option.inStock ? t('optionUnavailableAria') : ''}`}
                         />
                         <span className="min-w-0 flex-1 break-words font-mono text-[10px] leading-relaxed text-foreground">
                           {option.label}
@@ -244,7 +246,7 @@ export function WishlistItem({
                             </span>
                           )}
                           {!option.inStock && (
-                            <span className="mt-1 block text-danger">CURRENTLY UNAVAILABLE</span>
+                            <span className="mt-1 block text-danger">{t('unavailable')}</span>
                           )}
                         </span>
                       </label>
@@ -260,10 +262,10 @@ export function WishlistItem({
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <span className="font-mono text-[9px] uppercase tracking-[0.13em] text-foreground-subtle">
               {product.stockStatus === 'pre_order'
-                ? `NEXT BATCH // ${product.shippingEstimate}`
+                ? t('nextBatch', { estimate: product.shippingEstimate })
                 : productHasAllocationStock
-                  ? `READY TO ALLOCATE // ${product.shippingEstimate}`
-                  : 'CURRENTLY UNAVAILABLE'}
+                  ? t('ready', { estimate: product.shippingEstimate })
+                  : t('unavailable')}
             </span>
             {productHasAllocationStock && (
               <QuantitySelector
@@ -272,7 +274,7 @@ export function WishlistItem({
                 max={Math.max(1, maxAdditionalQuantity)}
                 size="md"
                 disabled={!canAllocate || !hasRemainingCapacity}
-                ariaLabel="Allocation quantity"
+                ariaLabel={t('quantity')}
               />
             )}
           </div>
@@ -281,12 +283,12 @@ export function WishlistItem({
             {matchingCartItem ? (
               <p className={`font-mono text-[9px] uppercase tracking-[0.13em] ${hasRemainingCapacity ? 'text-success' : 'text-accent'}`}>
                 {hasRemainingCapacity
-                  ? `ALREADY IN BAG // ${String(matchingCartItem.quantity).padStart(2, '0')} UNIT${matchingCartItem.quantity === 1 ? '' : 'S'}`
-                  : `ALLOCATION LIMIT REACHED // ${String(matchingCartItem.quantity).padStart(2, '0')} UNITS`}
+                  ? t('alreadyInBag', { count: matchingCartItem.quantity })
+                  : t('limitReached', { count: String(matchingCartItem.quantity).padStart(2, '0') })}
               </p>
             ) : otherCartConfigurations.length > 0 ? (
               <p className="font-mono text-[9px] uppercase tracking-[0.13em] text-accent">
-                IN BAG // OTHER FINISH OR CONFIGURATION
+                {t('inBagOther')}
               </p>
             ) : null}
           </div>
@@ -301,7 +303,7 @@ export function WishlistItem({
                 leftIcon={<ShoppingBag className="h-3.5 w-3.5" aria-hidden="true" />}
                 onClick={handleAllocate}
               >
-                Allocate another unit
+                {t('addAnother')}
               </Button>
             ) : (
               <Button
@@ -312,7 +314,7 @@ export function WishlistItem({
                 leftIcon={<ShoppingBag className="h-3.5 w-3.5" aria-hidden="true" />}
                 onClick={handleAllocate}
               >
-                {product.stockStatus === 'pre_order' ? 'Reserve batch' : 'Allocate to bag'}
+                {product.stockStatus === 'pre_order' ? t('reserve') : t('addToBag')}
               </Button>
             )}
             <Button
@@ -322,23 +324,23 @@ export function WishlistItem({
               leftIcon={<Eye className="h-3.5 w-3.5" aria-hidden="true" />}
               onClick={() => onQuickInspect(product)}
             >
-              Quick inspect
+              {t('quickView')}
             </Button>
           </div>
           {!canAllocate && productHasAllocationStock && (
             <p className="mt-2 text-[10px] text-foreground-subtle">
-              Choose an available finish and configuration to continue.
+              {t('chooseConfig')}
             </p>
           )}
 
           <button
             type="button"
             onClick={() => onRemove(product)}
-            aria-label={`Remove ${product.name} from the saved archive`}
+            aria-label={t('removeAria', { name: product.name })}
             className="mt-3 inline-flex min-h-11 items-center gap-2 font-mono text-[9px] uppercase tracking-[0.13em] text-foreground-subtle transition-colors hover:text-danger focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground"
           >
             <Heart className="h-3.5 w-3.5" aria-hidden="true" />
-            Remove from archive
+            {t('remove')}
           </button>
         </div>
       </div>

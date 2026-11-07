@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import { Link } from '@/i18n/navigation';
+import { useTranslations } from 'next-intl';
 import { ArrowUpRight, Eye, Heart, RotateCcw } from 'lucide-react';
 import type { Collection, Product } from '@/types';
 import { QuickViewModal } from '@/components/product';
@@ -27,6 +28,7 @@ export function WishlistExperience({
   allProducts,
   collections,
 }: WishlistExperienceProps) {
+  const t = useTranslations('wishlist');
   const {
     addToCart,
     cart,
@@ -143,16 +145,16 @@ export function WishlistExperience({
             />
           ) : (
             <EmptyState
-              code="ARCHIVE // EMPTY"
-              title="Nothing held in reserve."
-              description="Save an instrument from the NOIRÉ shop and it will be kept here for your next inspection. Your archive remains private to this browser."
+              code={t('empty.code')}
+              title={t('empty.title')}
+              description={t('empty.description')}
               icon={<Heart className="h-5 w-5" aria-hidden="true" />}
               primaryAction={
                 <Link
                   href="/shop"
                   className="inline-flex min-h-11 items-center gap-2 border border-foreground bg-foreground px-5 font-mono text-[10px] uppercase tracking-[0.13em] text-background transition-colors hover:bg-foreground/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground"
                 >
-                  Explore the archive <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
+                  {t('empty.explore')} <ArrowUpRight className="h-3.5 w-3.5 rtl:-scale-x-100" aria-hidden="true" />
                 </Link>
               }
               secondaryAction={
@@ -160,7 +162,7 @@ export function WishlistExperience({
                   href="/"
                   className="inline-flex min-h-11 items-center border-b border-border px-1 font-mono text-[10px] uppercase tracking-[0.13em] text-foreground-muted transition-colors hover:border-foreground hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground"
                 >
-                  Return to Maison
+                  {t('empty.home')}
                 </Link>
               }
             />
@@ -178,8 +180,8 @@ export function WishlistExperience({
       <Modal
         isOpen={isClearConfirmationOpen}
         onClose={() => setIsClearConfirmationOpen(false)}
-        title="Clear the saved archive?"
-        code="CONFIRMATION // PRIVATE LEDGER"
+        title={t('clearModal.title')}
+        code={t('clearModal.code')}
         size="sm"
         footer={
           <>
@@ -189,7 +191,7 @@ export function WishlistExperience({
               size="md"
               onClick={() => setIsClearConfirmationOpen(false)}
             >
-              Keep archive
+              {t('clearModal.keep')}
             </Button>
             <Button
               type="button"
@@ -198,13 +200,13 @@ export function WishlistExperience({
               leftIcon={<RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />}
               onClick={confirmClearArchive}
             >
-              Confirm clear
+              {t('clearModal.confirm')}
             </Button>
           </>
         }
       >
         <p className="text-small leading-relaxed text-foreground-muted">
-          This removes every saved instrument from the shared archive immediately. Your active bag and its configurations will not be changed. You can restore the archive from the Undo action in the confirmation toast.
+          {t('clearModal.body')}
         </p>
       </Modal>
 
@@ -220,26 +222,27 @@ function RecentlyViewedSection({
   products: Product[];
   onQuickInspect: (product: Product) => void;
 }) {
+  const t = useTranslations('wishlist.recent');
   return (
     <section aria-labelledby="recently-viewed-heading" className="mt-12 border-t border-border pt-7 sm:mt-16 sm:pt-9">
       <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="font-mono text-[9px] uppercase tracking-[0.15em] text-accent">Recall // 02</p>
+          <p className="font-mono text-[9px] uppercase tracking-[0.15em] text-accent">{t('code')}</p>
           <h2 id="recently-viewed-heading" className="mt-1 font-display text-2xl text-foreground sm:text-3xl">
-            Recently inspected
+            {t('title')}
           </h2>
         </div>
         <Link
           href="/shop"
           className="inline-flex min-h-11 items-center gap-2 font-mono text-[9px] uppercase tracking-[0.13em] text-foreground-muted transition-colors hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground"
         >
-          View complete archive <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
+          {t('viewAll')} <ArrowUpRight className="h-3.5 w-3.5 rtl:-scale-x-100" aria-hidden="true" />
         </Link>
       </div>
 
       {products.length === 0 ? (
         <p className="border border-border bg-surface px-4 py-5 font-mono text-[10px] uppercase tracking-[0.12em] text-foreground-subtle sm:px-5">
-          No recent inspections // Browse an instrument to begin your recall ledger.
+          {t('empty')}
         </p>
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -247,7 +250,7 @@ function RecentlyViewedSection({
             <article key={product.id} className="group flex min-w-0 flex-col border border-border bg-surface transition-colors hover:border-foreground/40">
               <Link
                 href={`/product/${product.slug}`}
-                aria-label={`Open product dossier for ${product.name}`}
+                aria-label={t('open', { name: product.name })}
                 className="relative block aspect-[4/3] overflow-hidden bg-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-foreground"
               >
                 <Image
@@ -258,7 +261,7 @@ function RecentlyViewedSection({
                   className="object-cover transition-transform duration-500 group-hover:scale-[1.025] motion-reduce:transform-none"
                 />
                 <span className="absolute start-3 top-3 border border-border bg-background/90 px-2 py-1 font-mono text-[9px] uppercase tracking-[0.12em] text-foreground">
-                  RECENT // {String(index + 1).padStart(2, '0')}
+                  {t('badge', { index: String(index + 1).padStart(2, '0') })}
                 </span>
               </Link>
               <div className="flex flex-1 flex-col p-4">
@@ -278,9 +281,9 @@ function RecentlyViewedSection({
                     className="shrink-0 px-2"
                     leftIcon={<Eye className="h-3.5 w-3.5" aria-hidden="true" />}
                     onClick={() => onQuickInspect(product)}
-                    aria-label={`Quick inspect ${product.name}`}
+                    aria-label={t('quickView', { name: product.name })}
                   >
-                    Inspect
+                    {t('view')}
                   </Button>
                 </div>
               </div>

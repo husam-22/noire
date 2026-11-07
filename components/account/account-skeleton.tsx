@@ -41,8 +41,9 @@ export function AccountContentSkeleton() {
 }
 
 export function AccountOrderSkeleton() {
+  const t = useTranslations('orderConfirmation');
   return (
-    <div role="status" aria-label="Loading order dossier" aria-busy="true" className="space-y-5">
+    <div role="status" aria-label={t('loading')} aria-busy="true" className="space-y-5">
       <Skeleton className="h-4 w-48" />
       <Skeleton className="h-10 w-80 max-w-full" />
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
