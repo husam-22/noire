@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { ErrorState } from '@/components/ui';
 
 export default function AdminError({
@@ -9,14 +10,15 @@ export default function AdminError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const t = useTranslations('errors');
   return (
     <main id="main-content" className="min-w-0">
       <ErrorState
-        code="ERR // COMMAND CENTER"
-        title="The Command Center could not be rendered."
-        description={error.message || 'An unexpected error interrupted the admin workspace.'}
+        code={t('admin.code')}
+        title={t('admin.title')}
+        description={error.message || t('admin.description')}
         onRetry={reset}
-        retryLabel="Try again"
+        retryLabel={t('retry')}
       />
     </main>
   );

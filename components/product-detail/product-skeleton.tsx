@@ -1,12 +1,14 @@
 import React from 'react';
+import { useTranslations } from 'next-intl';
 import { Container } from '@/components/layout';
 import { Skeleton } from '@/components/ui';
 
 export function ProductDetailSkeleton() {
+  const t = useTranslations('productDetail');
   return (
     <div
       aria-busy="true"
-      aria-label="Loading instrument dossier"
+      aria-label={t('loading')}
       className="min-h-screen bg-background pt-20 text-foreground"
     >
       {/* Breadcrumb Skeleton */}

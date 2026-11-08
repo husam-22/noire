@@ -8,6 +8,7 @@ import React, {
   useCallback,
 } from 'react';
 import { Link } from '@/i18n/navigation';
+import { useTranslations } from 'next-intl';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ShoppingBag,
@@ -59,6 +60,7 @@ export function ProductHeroExperience({
   product,
   collections,
 }: ProductHeroExperienceProps) {
+  const t = useTranslations('productDetail.hero');
   const {
     addToCart,
     toggleWishlist,
@@ -144,9 +146,9 @@ export function ProductHeroExperience({
       addSlide(
         selectedColor.image,
         matchingGalleryItem?.alt ||
-          `${product.name} in ${selectedColor.name} (${selectedColor.finish})`,
+          t('slideFinishAlt', { name: product.name, color: selectedColor.name, finish: selectedColor.finish }),
         matchingGalleryItem?.caption ||
-          `Finish: ${selectedColor.name} — ${selectedColor.finish}`
+          t('slideFinishCaption', { color: selectedColor.name, finish: selectedColor.finish })
       );
     }
 
@@ -157,9 +159,9 @@ export function ProductHeroExperience({
       addSlide(
         selectedColor.secondaryImage,
         matchingGalleryItem?.alt ||
-          `${product.name} alternate view in ${selectedColor.name}`,
+          t('slideAltViewAlt', { name: product.name, color: selectedColor.name }),
         matchingGalleryItem?.caption ||
-          `Alternate perspective — ${selectedColor.name}`
+          t('slideAltViewCaption', { color: selectedColor.name })
       );
     }
 
@@ -167,25 +169,25 @@ export function ProductHeroExperience({
     product.gallery.forEach((item, idx) => {
       addSlide(
         item.url,
-        item.alt || `${product.name} perspective ${idx + 1}`,
-        item.caption || `Fig 0${idx + 1}. ${product.name} architectural detail.`
+        item.alt || t('slideGalleryAlt', { name: product.name, index: idx + 1 }),
+        item.caption || t('slideGalleryCaption', { name: product.name, index: idx + 1 })
       );
     });
 
     // 3. Fallback to product.primaryImage & secondaryImage
     addSlide(
       product.primaryImage,
-      `${product.name} primary elevation`,
-      `Fig 01. ${product.name}`
+      t('slidePrimaryAlt', { name: product.name }),
+      t('slideFigure', { name: product.name, index: 1 })
     );
     addSlide(
       product.secondaryImage,
-      `${product.name} secondary perspective`,
-      `Fig 02. ${product.name}`
+      t('slideSecondaryAlt', { name: product.name }),
+      t('slideFigure', { name: product.name, index: 2 })
     );
 
     return list;
-  }, [product, selectedColor]);
+  }, [product, selectedColor, t]);
 
   const safeSlideIndex = Math.min(activeSlideIndex, Math.max(0, slides.length - 1));
   const currentSlide = slides[safeSlideIndex] || slides[0];
@@ -278,19 +280,16 @@ export function ProductHeroExperience({
 
   // Determine context-aware CTA label
   const getPrimaryCtaLabel = () => {
-    if (isUnavailable) return 'Allocation Currently Exhausted';
-    if (justAdded) return 'Allocated to Bag ✓';
+    if (isUnavailable) return t('ctaUnavailable');
+    if (justAdded) return t('ctaAdded');
+    const price = formatPrice(activeUnitPrice * quantity);
     if (product.stockStatus === 'pre_order') {
-      return `Reserve Pre-Order Batch — ${formatPrice(
-        activeUnitPrice * quantity
-      )}`;
+      return t('ctaPreOrder', { price });
     }
     if (product.stockStatus === 'low_stock') {
-      return `Allocate Limited Batch — ${formatPrice(
-        activeUnitPrice * quantity
-      )}`;
+      return t('ctaLowStock', { price });
     }
-    return `Allocate to Bag — ${formatPrice(activeUnitPrice * quantity)}`;
+    return t('cta', { price });
   };
 
   const handlePurchaseAction = async () => {
@@ -393,11 +392,11 @@ export function ProductHeroExperience({
                 <button
                   type="button"
                   onClick={() => setIsFullscreenOpen(true)}
-                  aria-label="Open fullscreen product inspection viewer"
+                  aria-label={t('fullscreenAria')}
                   className="inline-flex items-center gap-1.5 text-foreground-muted transition-colors hover:text-foreground"
                 >
                   <Maximize2 className="h-3.5 w-3.5" aria-hidden="true" />
-                  <span>Fullscreen Inspect</span>
+                  <span>{t('fullscreen')}</span>
                 </button>
               </div>
 
@@ -467,7 +466,7 @@ export function ProductHeroExperience({
                         e.stopPropagation();
                         handlePrevSlide();
                       }}
-                      aria-label="Previous image"
+                      aria-label={t('prevImage')}
                       className="pointer-events-auto flex h-10 w-10 items-center justify-center border border-border bg-background/90 text-foreground backdrop-blur-sm transition-colors hover:border-foreground hover:bg-foreground hover:text-background"
                     >
                       <ChevronLeft className="h-4 w-4" aria-hidden="true" />
@@ -479,7 +478,7 @@ export function ProductHeroExperience({
                         e.stopPropagation();
                         handleNextSlide();
                       }}
-                      aria-label="Next image"
+                      aria-label={t('nextImage')}
                       className="pointer-events-auto flex h-10 w-10 items-center justify-center border border-border bg-background/90 text-foreground backdrop-blur-sm transition-colors hover:border-foreground hover:bg-foreground hover:text-background"
                     >
                       <ChevronRight className="h-4 w-4" aria-hidden="true" />
@@ -489,7 +488,7 @@ export function ProductHeroExperience({
 
                 {/* Subtle Bottom Zoom / Swipe Hint */}
                 <div className="pointer-events-none absolute bottom-3 end-3 hidden border border-border bg-background/85 px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.14em] text-foreground-muted backdrop-blur-sm lg:block">
-                  HOVER TO INSPECT GRAIN · ARROW KEYS TO CYCLE
+                  {t('hint')}
                 </div>
               </div>
 
@@ -506,7 +505,7 @@ export function ProductHeroExperience({
             {slides.length > 1 && (
               <div
                 role="tablist"
-                aria-label="Product perspective thumbnails"
+                aria-label={t('thumbnailsAria')}
                 aria-orientation="horizontal"
                 className="grid grid-cols-4 gap-2.5 sm:gap-4"
               >
@@ -524,7 +523,7 @@ export function ProductHeroExperience({
                       aria-controls="pdp-gallery-stage"
                       aria-selected={isCurrent}
                       tabIndex={isCurrent ? 0 : -1}
-                      aria-label={`View perspective ${idx + 1}: ${slide.alt}`}
+                      aria-label={t('viewPerspective', { index: idx + 1, alt: slide.alt })}
                       onKeyDown={(event) => handleGalleryTabKeyDown(event, idx)}
                       onClick={() => setActiveSlideIndex(idx)}
                       className={cn(
@@ -575,7 +574,7 @@ export function ProductHeroExperience({
                         setIsFullscreenOpen(true);
                       }
                     }}
-                    aria-label={`Inspect detail plate 0${idx + 2}: ${detailSlide.alt}`}
+                    aria-label={t('inspectPlate', { index: idx + 2, alt: detailSlide.alt })}
                     className="group cursor-pointer border border-border bg-surface p-3 transition-colors hover:border-foreground/60"
                   >
                     <div className="relative aspect-[4/5] w-full overflow-hidden bg-surface-muted">
@@ -590,7 +589,7 @@ export function ProductHeroExperience({
                       </span>
                     </div>
                     <div className="mt-2.5 flex items-baseline justify-between gap-2 font-mono text-[10px] uppercase tracking-[0.12em] text-foreground-muted">
-                      <span>PLATE 0{idx + 2}</span>
+                      <span>{t('plate', { index: idx + 2 })}</span>
                       <span className="truncate text-foreground-subtle">
                         {detailSlide.caption}
                       </span>
@@ -630,7 +629,7 @@ export function ProductHeroExperience({
 
               <div className="space-y-2">
                 <TechnicalCode className="block text-foreground-muted">
-                  {product.modelNumber} {'//'} SKU: {activeSku}
+                  {t('skuLine', { model: product.modelNumber, sku: activeSku })}
                 </TechnicalCode>
 
                 <h1
@@ -659,7 +658,7 @@ export function ProductHeroExperience({
               <div className="flex flex-wrap items-baseline justify-between gap-4">
                 <div>
                   <span className="block font-mono text-[10px] uppercase tracking-[0.14em] text-foreground-subtle">
-                    SERIALIZED INSTRUMENT PRICE
+                    {t('priceLabel')}
                   </span>
                   <PriceDisplay
                     price={activeUnitPrice}
@@ -680,8 +679,7 @@ export function ProductHeroExperience({
 
               {optionDelta !== 0 && selectedOption && (
                 <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-accent">
-                  INCLUDES +{formatPrice(optionDelta)} FOR{' '}
-                  {selectedOption.label.toUpperCase()}
+                  {t('includesDelta', { price: formatPrice(optionDelta), option: selectedOption.label.toUpperCase() })}
                 </p>
               )}
             </div>
@@ -704,20 +702,20 @@ export function ProductHeroExperience({
                 <div className="space-y-2.5 pt-1">
                   <div className="flex items-center justify-between font-mono text-[10px] uppercase tracking-[0.14em]">
                     <span className="text-foreground-muted">
-                      {product.optionGroupLabel || 'Configuration'}
+                      {product.optionGroupLabel || t('configuration')}
                     </span>
                     {selectedOption && (
                       <span className="text-foreground-subtle">
                         {selectedOption.priceDelta > 0
                           ? `+${formatPrice(selectedOption.priceDelta)}`
-                          : 'Standard Calibration'}
+                          : t('standard')}
                       </span>
                     )}
                   </div>
 
                   <div
                     role="radiogroup"
-                    aria-label={product.optionGroupLabel || 'Product configuration'}
+                    aria-label={product.optionGroupLabel || t('configurationAria')}
                     className="space-y-2"
                   >
                     {product.options.map((opt, idx) => {
@@ -771,7 +769,7 @@ export function ProductHeroExperience({
                           >
                             {opt.priceDelta > 0
                               ? `+${formatPrice(opt.priceDelta)}`
-                              : 'Included'}
+                              : t('included')}
                           </span>
                         </button>
                       );
@@ -786,7 +784,7 @@ export function ProductHeroExperience({
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-foreground-muted">
-                    Quantity
+                    {t('quantity')}
                   </span>
                   <QuantitySelector
                     value={quantity}
@@ -803,8 +801,8 @@ export function ProductHeroExperience({
                   onClick={() => toggleWishlist(product)}
                   aria-label={
                     savedInWishlist
-                      ? `Remove ${product.name} from archive wishlist`
-                      : `Save ${product.name} to archive wishlist`
+                      ? t('removeWishlist', { name: product.name })
+                      : t('saveWishlist', { name: product.name })
                   }
                   className={cn(
                     'inline-flex h-11 items-center gap-2 border px-4 font-mono text-[10px] uppercase tracking-[0.14em] transition-colors',
@@ -817,7 +815,7 @@ export function ProductHeroExperience({
                     className={cn('h-3.5 w-3.5', savedInWishlist && 'fill-current')}
                     aria-hidden="true"
                   />
-                  <span>{savedInWishlist ? 'Saved in Archive' : 'Save to Archive'}</span>
+                  <span>{savedInWishlist ? t('saved') : t('save')}</span>
                 </button>
               </div>
 
@@ -867,7 +865,7 @@ export function ProductHeroExperience({
                 />
                 <div>
                   <span className="block uppercase tracking-[0.12em] text-foreground">
-                    DISPATCH &amp; LOGISTICS
+                    {t('shippingLabel')}
                   </span>
                   <span className="text-foreground-muted">
                     {product.shippingEstimate}
@@ -882,11 +880,10 @@ export function ProductHeroExperience({
                 />
                 <div>
                   <span className="block uppercase tracking-[0.12em] text-foreground">
-                    WARRANTY PROTECTION
+                    {t('warrantyLabel')}
                   </span>
                   <span className="text-foreground-muted">
-                    {product.warrantyYears}-Year NOIRÉ Structural &amp; Acoustic
-                    Guarantee
+                    {t('warrantyValue', { years: product.warrantyYears })}
                   </span>
                 </div>
               </div>
@@ -898,11 +895,10 @@ export function ProductHeroExperience({
                 />
                 <div>
                   <span className="block uppercase tracking-[0.12em] text-foreground">
-                    MODULAR SERVICEABILITY
+                    {t('serviceLabel')}
                   </span>
                   <span className="text-foreground-muted">
-                    Serialized Torx hardware architecture · 30-day studio
-                    audition policy (configurable)
+                    {t('serviceValue')}
                   </span>
                 </div>
               </div>
@@ -914,11 +910,10 @@ export function ProductHeroExperience({
                 />
                 <div>
                   <span className="block uppercase tracking-[0.12em] text-foreground">
-                    PROVENANCE
+                    {t('provenanceLabel')}
                   </span>
                   <span className="text-foreground-muted">
-                    Designed &amp; Calibrated in {product.designedIn} (Release{' '}
-                    {product.releaseYear})
+                    {t('provenanceValue', { origin: product.designedIn, year: product.releaseYear })}
                   </span>
                 </div>
               </div>
@@ -931,10 +926,12 @@ export function ProductHeroExperience({
       <Modal
         isOpen={isFullscreenOpen}
         onClose={() => setIsFullscreenOpen(false)}
-        title={`${product.name} — ${selectedColor.name}`}
-        code={`FIG ${String(safeSlideIndex + 1).padStart(2, '0')} OF ${String(
-          slides.length
-        ).padStart(2, '0')} // ${product.modelNumber}`}
+        title={t('modalTitle', { name: product.name, color: selectedColor.name })}
+        code={t('modalCode', {
+          index: String(safeSlideIndex + 1).padStart(2, '0'),
+          total: String(slides.length).padStart(2, '0'),
+          model: product.modelNumber,
+        })}
         size="full"
         footer={
           <div className="flex w-full flex-wrap items-center justify-between gap-4">
@@ -948,7 +945,7 @@ export function ProductHeroExperience({
                 onClick={handlePrevSlide}
                 disabled={slides.length <= 1}
               >
-                ← Previous
+                {t('previous')}
               </Button>
               <Button
                 variant="outline"
@@ -956,7 +953,7 @@ export function ProductHeroExperience({
                 onClick={handleNextSlide}
                 disabled={slides.length <= 1}
               >
-                Next →
+                {t('next')}
               </Button>
             </div>
           </div>
@@ -975,10 +972,10 @@ export function ProductHeroExperience({
             <div className="space-y-4">
               <div className="border-b border-border pb-3">
                 <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-accent">
-                  PERSPECTIVE SELECTOR
+                  {t('perspectiveSelector')}
                 </span>
                 <p className="mt-1 text-caption text-foreground-muted">
-                  Use Left/Right arrow keys or select a plate below.
+                  {t('perspectiveHint')}
                 </p>
               </div>
 
@@ -1007,7 +1004,7 @@ export function ProductHeroExperience({
 
             <div className="space-y-3 border-t border-border pt-4">
               <span className="block font-mono text-[10px] uppercase tracking-[0.14em] text-foreground-subtle">
-                ACTIVE FINISH: {selectedColor.name}
+                {t('activeFinish', { color: selectedColor.name })}
               </span>
               <ColorSwatchGroup
                 colors={product.colors}
@@ -1034,7 +1031,7 @@ export function ProductHeroExperience({
               ease: NOIRE_MOTION_TOKENS.easing.outExpo,
             }}
             role="region"
-            aria-label="Quick purchase bar"
+            aria-label={t('quickBarAria')}
             className="fixed bottom-0 start-0 end-0 z-header border-t border-border bg-background/95 px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-elevated backdrop-blur-md lg:hidden"
           >
             <div className="mx-auto flex max-w-xl items-center justify-between gap-3">
@@ -1066,12 +1063,12 @@ export function ProductHeroExperience({
                 className="shrink-0"
               >
                 {isUnavailable
-                  ? 'Exhausted'
+                  ? t('quickUnavailable')
                   : justAdded
-                  ? 'Allocated ✓'
+                  ? t('quickAdded')
                   : product.stockStatus === 'pre_order'
-                  ? 'Reserve'
-                  : '+ Allocate'}
+                  ? t('quickReserve')
+                  : t('quickAdd')}
               </Button>
             </div>
           </motion.div>

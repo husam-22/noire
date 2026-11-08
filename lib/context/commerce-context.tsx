@@ -8,6 +8,7 @@ import React, {
   useCallback,
   useMemo,
 } from 'react';
+import { useTranslations } from 'next-intl';
 import type {
   Product,
   ProductColorVariant,
@@ -108,17 +109,19 @@ const STORAGE_KEYS = {
 const LEGACY_ORDERS_KEY = 'noire_orders_v1';
 
 /** Safe default when the database has no active shipping method yet. */
-const FALLBACK_SHIPPING_METHOD: ShippingMethod = {
-  id: 'standard',
-  code: 'standard',
-  name: 'Standard delivery',
-  carrier: 'Courier',
-  estimatedWindow: '5–7 business days',
-  estimatedDispatch: '1–2 business days',
-  baseCost: STANDARD_COURIER_RATE,
-  freeAboveSubtotal: FREE_SHIPPING_THRESHOLD,
-  description: '',
-};
+function fallbackShippingMethod(t: (key: string) => string): ShippingMethod {
+  return {
+    id: 'standard',
+    code: 'standard',
+    name: t('fallbackShipping'),
+    carrier: t('fallbackCarrier'),
+    estimatedWindow: t('fallbackWindow'),
+    estimatedDispatch: t('fallbackDispatch'),
+    baseCost: STANDARD_COURIER_RATE,
+    freeAboveSubtotal: FREE_SHIPPING_THRESHOLD,
+    description: '',
+  };
+}
 const MAX_PERSISTED_STATE_CHARS = 2 * 1024 * 1024;
 
 export function CommerceProvider({
@@ -129,9 +132,10 @@ export function CommerceProvider({
   shippingMethods?: ShippingMethod[];
 }) {
   const { addToast } = useToast();
+  const t = useTranslations('commerceToasts');
   const shippingMethods = useMemo<ShippingMethod[]>(
-    () => (shippingMethodsProp && shippingMethodsProp.length > 0 ? shippingMethodsProp : [FALLBACK_SHIPPING_METHOD]),
-    [shippingMethodsProp]
+    () => (shippingMethodsProp && shippingMethodsProp.length > 0 ? shippingMethodsProp : [fallbackShippingMethod(t)]),
+    [shippingMethodsProp, t]
   );
 
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -372,16 +376,16 @@ export function CommerceProvider({
       } else {
         addToast({
           type: 'cart',
-          title: `${product.name} added to bag`,
+          title: t('addedToBag', { name: product.name }),
           description: `${selectedColor.name}${
             selectedOption ? ` — ${selectedOption.label}` : ''
           } × ${safeQuantity}`,
-          actionLabel: 'Open Bag',
+          actionLabel: t('openBag'),
           onAction: () => setIsCartDrawerOpen(true),
         });
       }
     },
-    [addToast]
+    [addToast, t]
   );
 
   const removeFromCart = useCallback(
@@ -391,11 +395,11 @@ export function CommerceProvider({
       if (removed) {
         addToast({
           type: 'info',
-          title: `${removed.name} removed`,
-          description: `${removed.selectedColor.name}${
-            removed.selectedOption ? ` · ${removed.selectedOption.label}` : ''
-          } removed from allocation bag.`,
-          actionLabel: 'Undo',
+          title: t('removed', { name: removed.name }),
+          description: t('removedFromBag', {
+            variant: `${removed.selectedColor.name}${removed.selectedOption ? ` · ${removed.selectedOption.label}` : ''}`,
+          }),
+          actionLabel: t('undo'),
           onAction: () => {
             setCart((prev) => {
               if (prev.some((i) => i.id === removed.id)) return prev;
@@ -405,7 +409,7 @@ export function CommerceProvider({
         });
       }
     },
-    [cart, addToast]
+    [cart, addToast, t]
   );
 
   const updateCartQuantity = useCallback(
@@ -462,11 +466,11 @@ export function CommerceProvider({
 
       addToast({
         type: 'wishlist',
-        title: `${target.name} saved for later`,
-        description: 'Moved from active allocation bag to your Wishlist Archive.',
+        title: t('savedForLater', { name: target.name }),
+        description: t('savedForLaterBody'),
       });
     },
-    [cart, addToast]
+    [cart, addToast, t]
   );
 
   const clearCart = useCallback(
@@ -476,12 +480,12 @@ export function CommerceProvider({
       if (!silent) {
         addToast({
           type: 'info',
-          title: 'Allocation manifest cleared',
-          description: 'All instruments have been released from your bag.',
+          title: t('bagCleared'),
+          description: t('bagClearedBody'),
         });
       }
     },
-    [addToast]
+    [addToast, t]
   );
 
   const isInWishlist = useCallback(
@@ -499,12 +503,12 @@ export function CommerceProvider({
       addToast({
         type: 'wishlist',
         title: exists
-          ? `${product.name} removed from archive`
-          : `${product.name} saved to archive`,
+          ? t('wishlistRemoved', { name: product.name })
+          : t('wishlistAdded', { name: product.name }),
         description: product.modelNumber,
       });
     },
-    [wishlistIds, addToast]
+    [wishlistIds, addToast, t]
   );
 
   const removeWishlistItem = useCallback(
@@ -513,9 +517,9 @@ export function CommerceProvider({
       setWishlistIds((prev) => prev.filter((id) => id !== product.id));
       addToast({
         type: 'wishlist',
-        title: `${product.name} removed from your archive`,
-        description: 'The instrument has been removed from your private ledger.',
-        actionLabel: 'Undo',
+        title: t('wishlistRemoved', { name: product.name }),
+        description: t('wishlistRemovedBody'),
+        actionLabel: t('undo'),
         onAction: () => {
           setWishlistIds((prev) =>
             prev.includes(product.id) ? prev : [product.id, ...prev]
@@ -523,7 +527,7 @@ export function CommerceProvider({
         },
       });
     },
-    [wishlistIds, addToast]
+    [wishlistIds, addToast, t]
   );
 
   const clearWishlist = useCallback(() => {
@@ -532,9 +536,9 @@ export function CommerceProvider({
     setWishlistIds([]);
     addToast({
       type: 'info',
-      title: 'Saved archive cleared',
-      description: `${removedIds.length} saved instrument${removedIds.length === 1 ? '' : 's'} removed from the private ledger.`,
-      actionLabel: 'Undo',
+      title: t('wishlistCleared'),
+      description: t('wishlistClearedBody', { count: removedIds.length }),
+      actionLabel: t('undo'),
       onAction: () => {
         setWishlistIds((prev) => {
           const present = new Set(prev);
@@ -543,7 +547,7 @@ export function CommerceProvider({
         });
       },
     });
-  }, [wishlistIds, addToast]);
+  }, [wishlistIds, addToast, t]);
 
   const pruneWishlistIds = useCallback((validProductIds: string[]) => {
     const validIds = new Set(validProductIds);
@@ -612,14 +616,14 @@ export function CommerceProvider({
         setAppliedDiscount(safeDiscount);
         addToast({
           type: 'success',
-          title: `Code ${safeDiscount.code} applied`,
+          title: t('codeApplied', { code: safeDiscount.code }),
           description: safeDiscount.description,
         });
         return { valid: true, message: result.message };
       }
       return { valid: false, message: result.message };
     },
-    [cartSubtotal, addToast]
+    [cartSubtotal, addToast, t]
   );
 
   const removeDiscountCode = useCallback(() => {
@@ -628,10 +632,10 @@ export function CommerceProvider({
     setAppliedDiscount(null);
     addToast({
       type: 'info',
-      title: `Code ${codeName} removed`,
-      description: 'The discount code has been removed from your bag.',
+      title: t('codeRemoved', { code: codeName }),
+      description: t('codeRemovedBody'),
     });
-  }, [appliedDiscount, addToast]);
+  }, [appliedDiscount, addToast, t]);
 
   // Single authoritative source of truth for shipping cost based on selectedShippingMethod
   const shippingEstimateCost = useMemo(() => {

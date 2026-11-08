@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { Link } from '@/i18n/navigation';
 import { useRouter } from '@/i18n/navigation';
 import { useReducedMotion } from 'framer-motion';
+import { useLocale, useTranslations } from 'next-intl';
 import {
   AlertCircle,
   ArrowLeft,
@@ -45,59 +46,68 @@ import { Container } from '@/components/layout';
 import { formatPrice } from '@/lib/utils';
 import { CheckoutSkeleton } from './checkout-skeleton';
 
-const COUNTRIES = [
-  'United States',
-  'United Kingdom',
-  'Germany',
-  'France',
-  'Switzerland',
-  'Japan',
-  'Canada',
-  'Australia',
-  'United Arab Emirates',
-  'Saudi Arabia',
-  'Yemen',
-  'Netherlands',
-  'Italy',
-  'Spain',
-  'Singapore',
-  'South Korea',
-  'Hong Kong',
-  'Sweden',
-  'Norway',
-  'Denmark',
-  'Other / International',
+const COUNTRIES: Array<{ name: string; code: string | null }> = [
+  { name: 'United States', code: 'US' },
+  { name: 'United Kingdom', code: 'GB' },
+  { name: 'Germany', code: 'DE' },
+  { name: 'France', code: 'FR' },
+  { name: 'Switzerland', code: 'CH' },
+  { name: 'Japan', code: 'JP' },
+  { name: 'Canada', code: 'CA' },
+  { name: 'Australia', code: 'AU' },
+  { name: 'United Arab Emirates', code: 'AE' },
+  { name: 'Saudi Arabia', code: 'SA' },
+  { name: 'Yemen', code: 'YE' },
+  { name: 'Netherlands', code: 'NL' },
+  { name: 'Italy', code: 'IT' },
+  { name: 'Spain', code: 'ES' },
+  { name: 'Singapore', code: 'SG' },
+  { name: 'South Korea', code: 'KR' },
+  { name: 'Hong Kong', code: 'HK' },
+  { name: 'Sweden', code: 'SE' },
+  { name: 'Norway', code: 'NO' },
+  { name: 'Denmark', code: 'DK' },
+  { name: 'Other / International', code: null },
 ];
+
+function countryOptions(locale: string, otherLabel: string): Array<{ value: string; label: string }> {
+  let displayNames: Intl.DisplayNames | null = null;
+  try {
+    displayNames = new Intl.DisplayNames([locale], { type: 'region' });
+  } catch {
+    displayNames = null;
+  }
+  return COUNTRIES.map((country) => ({
+    value: country.name,
+    label: country.code ? displayNames?.of(country.code) ?? country.name : otherLabel,
+  }));
+}
 
 type FieldErrors = Record<string, string>;
 type AddressField = keyof CheckoutAddressDraft;
 type ManualPaymentMethod = Extract<PaymentMethodType, 'cash_on_delivery' | 'bank_transfer'>;
 
+type CheckoutT = ReturnType<typeof useTranslations<'checkout'>>;
+
 const PAYMENT_OPTIONS: Array<{
   id: ManualPaymentMethod;
-  label: string;
-  summary: string;
-  detail: string;
   icon: React.ComponentType<{ className?: string; 'aria-hidden'?: boolean | 'true' | 'false' }>;
 }> = [
   {
     id: 'cash_on_delivery',
-    label: 'Cash on delivery',
-    summary: 'Pay the courier in full when your order arrives.',
-    detail: 'Our team confirms the order by phone or email before dispatch. Have the exact amount ready for the courier.',
     icon: Banknote,
   },
   {
     id: 'bank_transfer',
-    label: 'Bank transfer',
-    summary: 'Transfer the total to our account; we dispatch once the payment is confirmed.',
-    detail: 'Bank details are included in your order confirmation. Use your order number as the transfer reference.',
     icon: Landmark,
   },
 ];
 
-function paymentLabel(method: PaymentMethodType): string {
-  return PAYMENT_OPTIONS.find((option) => option.id === method)?.label ?? 'Manual settlement';
+function paymentLabel(t: CheckoutT, method: PaymentMethodType): string {
+  if (method === 'cash_on_delivery' || method === 'bank_transfer') {
+    return t(`payment.${method}.label`);
+  }
+  return t('payment.manual');
 }
 
 function newIdempotencyKey(): string {
@@ -229,7 +239,7 @@ function SectionHeading({
   title,
   detail,
   id,
-  requiredLabel = 'Required',
+  requiredLabel,
 }: {
   number: string;
   title: string;
@@ -237,6 +247,8 @@ function SectionHeading({
   id: string;
   requiredLabel?: string;
 }) {
+  const t = useTranslations('checkout');
+  const requiredText = requiredLabel ?? t('required');
   return (
     <div className="mb-6 flex flex-wrap items-start justify-between gap-4 border-b border-border pb-5">
       <div className="flex items-start gap-4">
@@ -250,7 +262,7 @@ function SectionHeading({
           <p className="mt-1.5 text-small text-foreground-muted">{detail}</p>
         </div>
       </div>
-      <TechnicalCode>{requiredLabel}</TechnicalCode>
+      <TechnicalCode>{requiredText}</TechnicalCode>
     </div>
   );
 }
@@ -293,13 +305,14 @@ function AllocationLines({
   items: CartItem[];
   lineTotals: Record<string, number>;
 }) {
+  const t = useTranslations('checkout');
   return (
     <ul className="divide-y divide-border">
       {items.map((item, index) => (
         <li key={item.id} className="grid grid-cols-[68px_minmax(0,1fr)] gap-3 py-4 sm:grid-cols-[76px_minmax(0,1fr)] sm:gap-4">
           <Link
             href={`/product/${item.slug}`}
-            aria-label={`View ${item.name}`}
+            aria-label={t('lines.view', { name: item.name })}
             className="relative aspect-[4/5] overflow-hidden bg-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground"
           >
             <Image
@@ -349,8 +362,8 @@ function AllocationLines({
               )}
             </div>
             <div className="mt-2 flex flex-wrap items-center justify-between gap-2 font-mono text-[10px] text-foreground-subtle">
-              <span>QTY {String(item.quantity).padStart(2, '0')}</span>
-              <span>{formatPrice(item.price)} / UNIT</span>
+              <span>{t('lines.qty', { count: String(item.quantity).padStart(2, '0') })}</span>
+              <span>{t('lines.perUnit', { price: formatPrice(item.price) })}</span>
             </div>
           </div>
         </li>
@@ -370,41 +383,42 @@ function TotalsLedger({
   shippingMethod: ShippingMethod;
   compact?: boolean;
 }) {
+  const t = useTranslations('checkout');
   return (
     <dl className={`space-y-3 border-t border-border ${compact ? 'pt-4' : 'pt-5'}`}>
       <div className="flex items-center justify-between gap-4 text-small">
-        <dt className="text-foreground-muted">Subtotal</dt>
+        <dt className="text-foreground-muted">{t('totals.subtotal')}</dt>
         <dd className="font-mono tabular-nums text-foreground">{formatPrice(totals.subtotal)}</dd>
       </div>
       {totals.discountAmount > 0 && (
         <div className="flex items-center justify-between gap-4 text-small">
           <dt className="min-w-0 text-foreground-muted">
-            Discount <span className="font-mono text-[10px]">{discountCode}</span>
+            {t('totals.discount')} <span className="font-mono text-[10px]">{discountCode}</span>
           </dt>
           <dd className="shrink-0 font-mono tabular-nums text-success">−{formatPrice(totals.discountAmount)}</dd>
         </div>
       )}
       <div className="flex items-start justify-between gap-4 text-small">
         <dt className="min-w-0 text-foreground-muted">
-          <span className="block">Delivery</span>
+          <span className="block">{t('totals.delivery')}</span>
           <span className="mt-0.5 block text-[10px] leading-relaxed text-foreground-subtle">
             {shippingMethod.name}
           </span>
         </dt>
         <dd className="shrink-0 font-mono tabular-nums text-foreground">
-          {totals.shippingCost === 0 ? 'INCLUDED' : formatPrice(totals.shippingCost)}
+          {totals.shippingCost === 0 ? t('totals.included') : formatPrice(totals.shippingCost)}
         </dd>
       </div>
       <div className="flex items-center justify-between gap-4 text-small">
-        <dt className="text-foreground-muted">Tax</dt>
+        <dt className="text-foreground-muted">{t('totals.tax')}</dt>
         <dd className="font-mono tabular-nums text-foreground">
-          {totals.taxAmount === 0 ? 'INCLUDED' : formatPrice(totals.taxAmount)}
+          {totals.taxAmount === 0 ? t('totals.included') : formatPrice(totals.taxAmount)}
         </dd>
       </div>
       <div className="flex items-end justify-between gap-4 border-t border-border pt-4">
         <dt>
-          <span className="block font-display text-base text-foreground">Total</span>
-          <span className="mt-1 block font-mono text-[9px] uppercase tracking-[0.13em] text-foreground-subtle">USD // payable on delivery or by transfer</span>
+          <span className="block font-display text-base text-foreground">{t('totals.total')}</span>
+          <span className="mt-1 block font-mono text-[9px] uppercase tracking-[0.13em] text-foreground-subtle">{t('totals.totalNote')}</span>
         </dt>
         <dd className="shrink-0 text-end">
           <PriceDisplay price={totals.total} size={compact ? 'lg' : 'xl'} />
@@ -444,27 +458,28 @@ function validateAddressDraft(
   address: CheckoutAddressDraft,
   prefix: string,
   fallbackPhone: string,
-  errors: FieldErrors
+  errors: FieldErrors,
+  t: CheckoutT
 ) {
   const required: Array<{ field: AddressField; label: string }> = [
-    { field: 'firstName', label: 'First name' },
-    { field: 'lastName', label: 'Last name' },
-    { field: 'country', label: 'Country' },
-    { field: 'line1', label: 'Street address' },
-    { field: 'city', label: 'City' },
-    { field: 'state', label: 'State / Province' },
-    { field: 'postalCode', label: 'Postal code' },
+    { field: 'firstName', label: t('fields.firstName') },
+    { field: 'lastName', label: t('fields.lastName') },
+    { field: 'country', label: t('fields.countryShort') },
+    { field: 'line1', label: t('fields.street') },
+    { field: 'city', label: t('fields.city') },
+    { field: 'state', label: t('fields.state') },
+    { field: 'postalCode', label: t('fields.postalCode') },
   ];
   for (const field of required) {
     if (!address[field.field].trim()) {
-      errors[`${prefix}.${field.field}`] = `${field.label} is required.`;
+      errors[`${prefix}.${field.field}`] = t('fields.isRequired', { label: field.label });
     }
   }
   const phone = address.phone.trim() || fallbackPhone.trim();
   if (!phone) {
-    errors[`${prefix}.phone`] = 'A delivery phone number is required.';
+    errors[`${prefix}.phone`] = t('fields.phoneRequired');
   } else if (!validatePhone(phone)) {
-    errors[`${prefix}.phone`] = 'Enter an international phone number with 7–15 digits.';
+    errors[`${prefix}.phone`] = t('fields.phoneInvalid');
   }
 }
 
@@ -477,6 +492,7 @@ function CartIssuePanel({
   onRemove: (itemId: string) => void;
   onApply: (issue: CartValidationIssue) => void;
 }) {
+  const t = useTranslations('checkout');
   if (issues.length === 0) return null;
   return (
     <div
@@ -490,7 +506,7 @@ function CartIssuePanel({
         <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-danger" aria-hidden="true" />
         <div className="min-w-0 flex-1">
           <h2 className="font-mono text-label uppercase tracking-[0.15em] text-danger">
-            Bag validation // action required
+            {t('issues.title')}
           </h2>
           <ul className="mt-3 space-y-4">
             {issues.map((issue, index) => (
@@ -506,7 +522,7 @@ function CartIssuePanel({
                       onClick={() => onRemove(issue.itemId)}
                       className="min-h-11 border-b border-foreground px-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-foreground hover:text-danger focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground"
                     >
-                      Remove affected line
+                      {t('issues.remove')}
                     </button>
                   )}
                   {issue.type === 'quantity_adjusted' && issue.suggestedQuantity !== undefined && (
@@ -515,7 +531,7 @@ function CartIssuePanel({
                       onClick={() => onApply(issue)}
                       className="min-h-11 border-b border-foreground px-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-foreground hover:text-danger focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground"
                     >
-                      Apply available quantity
+                      {t('issues.applyQuantity')}
                     </button>
                   )}
                   {issue.type === 'price_updated' && issue.updatedPrice !== undefined && (
@@ -524,7 +540,7 @@ function CartIssuePanel({
                       onClick={() => onApply(issue)}
                       className="min-h-11 border-b border-foreground px-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-foreground hover:text-danger focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground"
                     >
-                      Accept current valuation
+                      {t('issues.acceptPrice')}
                     </button>
                   )}
                   {(issue.type === 'quantity_adjusted' && issue.suggestedQuantity === undefined) && (
@@ -532,7 +548,7 @@ function CartIssuePanel({
                       href="/cart"
                       className="inline-flex min-h-11 items-center border-b border-foreground px-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-foreground hover:text-danger focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground"
                     >
-                      Review quantities in bag
+                      {t('issues.reviewQuantities')}
                     </Link>
                   )}
                 </div>
@@ -540,7 +556,7 @@ function CartIssuePanel({
             ))}
           </ul>
           <Link href="/cart" className="mt-4 inline-flex min-h-11 items-center gap-2 font-mono text-[10px] uppercase tracking-[0.12em] underline underline-offset-4">
-            Return to bag <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+            {t('returnToBag')} <ArrowRight className="h-3.5 w-3.5 rtl:rotate-180" aria-hidden="true" />
           </Link>
         </div>
       </div>
@@ -551,7 +567,10 @@ function CartIssuePanel({
 export function CheckoutExperience({
   initialShippingMethods,
 }: CheckoutExperienceProps) {
+  const t = useTranslations('checkout');
+  const locale = useLocale();
   const router = useRouter();
+  const countrySelectOptions = useMemo(() => countryOptions(locale, t('countries.other')), [locale, t]);
   const reducedMotion = useReducedMotion();
   const {
     cart,
@@ -575,8 +594,14 @@ export function CheckoutExperience({
   } = useCommerce();
   const storefront = useStorefrontContent();
   const paymentOptions = useMemo(
-    () => PAYMENT_OPTIONS.filter((option) => (option.id === 'cash_on_delivery' ? storefront.cashOnDeliveryEnabled : storefront.bankTransferEnabled)),
-    [storefront.cashOnDeliveryEnabled, storefront.bankTransferEnabled]
+    () =>
+      PAYMENT_OPTIONS.filter((option) => (option.id === 'cash_on_delivery' ? storefront.cashOnDeliveryEnabled : storefront.bankTransferEnabled)).map((option) => ({
+        ...option,
+        label: t(`payment.${option.id}.label`),
+        summary: t(`payment.${option.id}.summary`),
+        detail: t(`payment.${option.id}.detail`),
+      })),
+    [storefront.cashOnDeliveryEnabled, storefront.bankTransferEnabled, t]
   );
   const {
     customer,
@@ -640,7 +665,7 @@ export function CheckoutExperience({
         const methods = response.data;
         setShippingMethods(methods);
         if (methods.length === 0) {
-          setShippingServiceError('No delivery option is available for this destination yet. Check the selected country or contact us.');
+          setShippingServiceError(t('messages.noDeliveryOption'));
           return;
         }
         const contextMethod = methods.find((method) => method.id === selectedShippingMethod.id);
@@ -659,7 +684,7 @@ export function CheckoutExperience({
       })
       .catch(() => {
         if (!active) return;
-        setShippingServiceError('Delivery options could not be loaded. Retry or return to your bag.');
+        setShippingServiceError(t('messages.deliveryLoadFailed'));
       })
       .finally(() => {
         if (active) setIsLoadingShipping(false);
@@ -668,6 +693,7 @@ export function CheckoutExperience({
       active = false;
     };
   }, [
+    t,
     shippingAddress.country,
     cartSubtotal,
     appliedDiscount?.type,
@@ -772,27 +798,27 @@ export function CheckoutExperience({
     const identityFields: Array<keyof typeof customer> = ['firstName', 'lastName', 'email', 'phone'];
     for (const field of identityFields) {
       if (!customer[field].trim()) {
-        const label = field === 'firstName' ? 'First name' : field === 'lastName' ? 'Last name' : field === 'email' ? 'Email' : 'Phone';
-        nextErrors[`customer.${field}`] = `${label} is required.`;
+        const label = field === 'firstName' ? t('fields.firstName') : field === 'lastName' ? t('fields.lastName') : field === 'email' ? t('fields.emailShort') : t('fields.phone');
+        nextErrors[`customer.${field}`] = t('fields.isRequired', { label });
       }
     }
     if (customer.email.trim() && !validateEmail(customer.email)) {
-      nextErrors['customer.email'] = 'Enter a valid email address, such as studio@example.com.';
+      nextErrors['customer.email'] = t('fields.emailInvalid');
     }
     if (customer.phone.trim() && !validatePhone(customer.phone)) {
-      nextErrors['customer.phone'] = 'Enter an international phone number with 7–15 digits.';
+      nextErrors['customer.phone'] = t('fields.phoneInvalid');
     }
 
-    validateAddressDraft(shippingAddress, 'shipping', customer.phone, nextErrors);
+    validateAddressDraft(shippingAddress, 'shipping', customer.phone, nextErrors, t);
     if (!billingSameAsShipping) {
-      validateAddressDraft(billingAddress, 'billing', customer.phone, nextErrors);
+      validateAddressDraft(billingAddress, 'billing', customer.phone, nextErrors, t);
     }
 
     if (!paymentOptions.some((option) => option.id === paymentMethodType)) {
-      nextErrors['payment.method'] = 'Choose how you would like to pay.';
+      nextErrors['payment.method'] = t('messages.choosePayment');
     }
     return nextErrors;
-  }, [customer, shippingAddress, billingSameAsShipping, billingAddress, paymentMethodType, paymentOptions]);
+  }, [customer, shippingAddress, billingSameAsShipping, billingAddress, paymentMethodType, paymentOptions, t]);
 
   const focusFirstError = useCallback((errors: FieldErrors) => {
     const first = Object.keys(errors)[0];
@@ -826,7 +852,7 @@ export function CheckoutExperience({
     setFieldErrors({});
 
     if (cart.length === 0) {
-      setValidationError('Your bag is empty. Add a product before continuing.', 'client');
+      setValidationError(t('messages.emptyBag'), 'client');
       return null;
     }
 
@@ -841,13 +867,13 @@ export function CheckoutExperience({
     }
 
     if (isLoadingShipping || shippingServiceError || shippingMethods.length === 0 || !selectedShippingOption) {
-      setValidationError(shippingServiceError || (isLoadingShipping ? 'Delivery options are still loading for this destination. Wait a moment, then continue.' : 'No delivery option is available for this destination. Retry the lookup.'), 'delivery');
+      setValidationError(shippingServiceError || (isLoadingShipping ? t('messages.deliveryLoading') : t('messages.deliveryNone')), 'delivery');
       return null;
     }
 
     if (selectedShippingMethod.id !== selectedShippingOption.id) {
       setSelectedShippingMethod(selectedShippingOption);
-      setValidationError('The delivery option changed. Review the revised total, then continue.', 'delivery');
+      setValidationError(t('messages.deliveryChanged'), 'delivery');
       return null;
     }
 
@@ -855,17 +881,17 @@ export function CheckoutExperience({
       const shippingAddressRecord = makeAddress(
         shippingAddress,
         'checkout-shipping',
-        'Delivery Address',
+        t('addressLabels.delivery'),
         true,
         billingSameAsShipping,
         customer.phone
       );
       const billingAddressRecord = billingSameAsShipping
-        ? { ...shippingAddressRecord, id: 'checkout-billing', label: 'Billing Address', isDefaultShipping: false, isDefaultBilling: true }
+        ? { ...shippingAddressRecord, id: 'checkout-billing', label: t('addressLabels.billing'), isDefaultShipping: false, isDefaultBilling: true }
         : makeAddress(
             billingAddress,
             'checkout-billing',
-            'Billing Address',
+            t('addressLabels.billing'),
             false,
             true,
             customer.phone
@@ -914,9 +940,9 @@ export function CheckoutExperience({
         if (!discountCheck.valid || Math.abs(discountCheck.discountAmount - discountAmount) > 0.01) {
           removeDiscountCode();
           setPromoError(true);
-          setPromoMessage(discountCheck.message || 'The discount code changed. It has been removed; review your revised total.');
+          setPromoMessage(discountCheck.message || t('messages.discountChanged'));
           setPaymentState('failed');
-          setValidationError('The discount code could not be confirmed and has been removed. Review the updated total before continuing.', 'review');
+          setValidationError(t('messages.discountUnconfirmed'), 'review');
           return null;
         }
       }
@@ -931,7 +957,7 @@ export function CheckoutExperience({
         orderTotals.total !== cartTotal
       ) {
         setPaymentState('failed');
-        setValidationError(totalValidation.message || 'The order total changed. Review the updated summary.', 'review');
+        setValidationError(totalValidation.message || t('messages.totalChanged'), 'review');
         return null;
       }
 
@@ -943,13 +969,14 @@ export function CheckoutExperience({
       setPaymentState('failed');
       setValidationError(
         error instanceof Error
-          ? `Checkout validation failed: ${error.message}`
-          : 'Checkout validation could not be completed. Retry or return to your bag.',
+          ? t('messages.validationFailed', { message: error.message })
+          : t('messages.validationUnavailable'),
         'review'
       );
       return null;
     }
   }, [
+    t,
     cart,
     cartSubtotal,
     discountAmount,
@@ -1000,38 +1027,38 @@ export function CheckoutExperience({
     if (actionLock.current || isWorking) return;
     actionLock.current = true;
     setIsWorking(true);
-    setOrderAttemptStatus('Confirming stock, delivery and discount details…');
+    setOrderAttemptStatus(t('messages.confirming'));
     try {
       const safePaymentMethod = await runPreflight();
       if (!safePaymentMethod) return;
 
       const shippingMethod = shippingMethods.find((method) => method.id === selectedShippingMethodId);
       if (!shippingMethod) {
-        setValidationError('The selected delivery option could not be resolved. Choose an available option and retry.', 'delivery');
+        setValidationError(t('messages.deliveryUnresolved'), 'delivery');
         return;
       }
 
       const shippingAddressRecord = makeAddress(
         shippingAddress,
         'checkout-shipping',
-        'Delivery Address',
+        t('addressLabels.delivery'),
         true,
         billingSameAsShipping,
         customer.phone
       );
       const billingAddressRecord = billingSameAsShipping
-        ? { ...shippingAddressRecord, id: 'checkout-billing', label: 'Billing Address', isDefaultShipping: false, isDefaultBilling: true }
+        ? { ...shippingAddressRecord, id: 'checkout-billing', label: t('addressLabels.billing'), isDefaultShipping: false, isDefaultBilling: true }
         : makeAddress(
             billingAddress,
             'checkout-billing',
-            'Billing Address',
+            t('addressLabels.billing'),
             false,
             true,
             customer.phone
           );
 
       setPaymentState('intent_created');
-      setOrderAttemptStatus('Placing your order…');
+      setOrderAttemptStatus(t('messages.placing'));
       const result = await placeOrderAction({
         idempotencyKey: idempotencyKeyRef.current,
         customer,
@@ -1064,8 +1091,8 @@ export function CheckoutExperience({
       setPaymentState('failed');
       setValidationError(
         error instanceof Error
-          ? `${error.message} Your bag has been preserved; review the details and retry.`
-          : 'The order service is unavailable. Your bag has been preserved; retry or return to the bag.',
+          ? t('messages.orderErrorPreserved', { message: error.message })
+          : t('messages.orderServiceUnavailable'),
         'review'
       );
     } finally {
@@ -1115,7 +1142,7 @@ export function CheckoutExperience({
       }
     } catch {
       setPromoError(true);
-      setPromoMessage('Discount codes cannot be checked right now. Try again shortly.');
+      setPromoMessage(t('messages.promoUnavailable'));
     } finally {
       setIsApplyingPromo(false);
     }
@@ -1127,7 +1154,7 @@ export function CheckoutExperience({
       price: issue.updatedPrice,
     });
     setCartIssues((current) => current.filter((item) => item.itemId !== issue.itemId));
-    setGeneralError('Your bag has been updated. Review the refreshed total and continue.');
+    setGeneralError(t('messages.bagUpdated'));
   };
 
   const handleCartIssueRemove = (itemId: string) => {
@@ -1160,24 +1187,24 @@ export function CheckoutExperience({
       <section className="bg-background pb-section-md pt-10 sm:pt-14">
         <Container size="wide">
           <div className="mb-8 flex flex-wrap items-center justify-between gap-4 border-b border-border pb-5">
-            <TechnicalCode>NOIRÉ // CHECKOUT</TechnicalCode>
+            <TechnicalCode>{t('brand')}</TechnicalCode>
             <Link href="/cart" className="inline-flex min-h-11 items-center gap-2 font-mono text-[10px] uppercase tracking-[0.13em] text-foreground-muted hover:text-foreground">
-              <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" /> Return to bag
+              <ArrowLeft className="h-3.5 w-3.5 rtl:rotate-180" aria-hidden="true" /> {t('returnToBag')}
             </Link>
           </div>
           <EmptyState
-            code="CHECKOUT // EMPTY BAG"
-            title="Your bag is empty."
-            description="Add a product from the shop before starting checkout."
+            code={t('empty.code')}
+            title={t('empty.title')}
+            description={t('empty.description')}
             icon={<CreditCard className="h-6 w-6" aria-hidden="true" />}
             primaryAction={
               <Link href="/shop">
-                <Button withArrow="right">Explore the archive</Button>
+                <Button withArrow="right">{t('empty.explore')}</Button>
               </Link>
             }
             secondaryAction={
               <Link href="/cart" className="inline-flex min-h-11 items-center border-b border-foreground font-mono text-[10px] uppercase tracking-[0.13em]">
-                Review bag
+                {t('empty.reviewBag')}
               </Link>
             }
             className="min-h-[340px]"
@@ -1187,10 +1214,10 @@ export function CheckoutExperience({
     );
   }
 
-  const itemCountLabel = `${String(cartCount).padStart(2, '0')} UNIT${cartCount === 1 ? '' : 'S'}`;
+  const itemCountLabel = t('units', { count: cartCount });
   const promoThresholdMessage =
     appliedDiscount?.minOrderAmount && cartSubtotal < appliedDiscount.minOrderAmount
-      ? `Minimum order value ${formatPrice(appliedDiscount.minOrderAmount)} required.`
+      ? t('summary.minimum', { amount: formatPrice(appliedDiscount.minOrderAmount) })
       : '';
 
   return (
@@ -1198,12 +1225,12 @@ export function CheckoutExperience({
       <div className="surface-obsidian border-b border-border py-3.5">
         <Container size="wide" className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-2 font-mono text-[9px] uppercase tracking-[0.14em] text-foreground-inverse/70 sm:text-[10px]">
-            <span className="shrink-0">Bag</span>
-            <ChevronRight className="h-3 w-3 shrink-0" aria-hidden="true" />
-            <span className="truncate text-foreground-inverse">Checkout</span>
+            <span className="shrink-0">{t('crumb.bag')}</span>
+            <ChevronRight className="h-3 w-3 shrink-0 rtl:rotate-180" aria-hidden="true" />
+            <span className="truncate text-foreground-inverse">{t('crumb.checkout')}</span>
           </div>
           <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-foreground-inverse/60 sm:text-[10px]">
-            CHECKOUT // NR-{new Date().getFullYear()} · {itemCountLabel}
+            {t('crumb.code', { year: new Date().getFullYear(), units: itemCountLabel })}
           </span>
         </Container>
       </div>
@@ -1212,23 +1239,23 @@ export function CheckoutExperience({
         <header className="mb-8 border-b border-border pb-7 sm:mb-10 sm:pb-9">
           <div className="flex flex-wrap items-start justify-between gap-5">
             <div>
-              <p className="mb-3 font-mono text-label uppercase tracking-[0.16em] text-foreground-subtle">NOIRÉ // SECURE CHECKOUT</p>
-              <h1 className="font-display text-h1 leading-[1.04] text-foreground">Checkout<span className="text-accent">.</span></h1>
+              <p className="mb-3 font-mono text-label uppercase tracking-[0.16em] text-foreground-subtle">{t('header.eyebrow')}</p>
+              <h1 className="font-display text-h1 leading-[1.04] text-foreground">{t('header.title')}<span className="text-accent">.</span></h1>
               <p className="mt-3 max-w-2xl text-small leading-relaxed text-foreground-muted sm:text-body">
-                Enter your contact and delivery details, choose how you would like to pay, and review your order. Pay in cash on delivery or by bank transfer — our team confirms every order before dispatch.
+                {t('header.intro')}
               </p>
             </div>
             <Link href="/cart" className="inline-flex min-h-11 items-center gap-2 border-b border-border-strong/70 font-mono text-[10px] uppercase tracking-[0.13em] text-foreground-muted hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground">
-              <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" /> Edit bag
+              <ArrowLeft className="h-3.5 w-3.5 rtl:rotate-180" aria-hidden="true" /> {t('editBag')}
             </Link>
           </div>
 
-          <nav aria-label="Checkout dossier sections" className="mt-7 grid grid-cols-2 border-y border-border sm:grid-cols-4">
+          <nav aria-label={t('nav.label')} className="mt-7 grid grid-cols-2 border-y border-border sm:grid-cols-4">
             {([
-              ['client', '01', 'Client'],
-              ['delivery', '02', 'Delivery'],
-              ['settlement', '03', 'Payment'],
-              ['review', '04', 'Review'],
+              ['client', '01', t('nav.client')],
+              ['delivery', '02', t('nav.delivery')],
+              ['settlement', '03', t('nav.settlement')],
+              ['review', '04', t('nav.review')],
             ] as const).map(([section, number, label]) => (
               <button
                 key={section}
@@ -1256,9 +1283,9 @@ export function CheckoutExperience({
             <div className="flex items-start gap-3">
               <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-danger" aria-hidden="true" />
               <div className="min-w-0">
-                <p className="font-mono text-label uppercase tracking-[0.13em] text-danger">Checkout needs attention</p>
+                <p className="font-mono text-label uppercase tracking-[0.13em] text-danger">{t('generalError.title')}</p>
                 <p className="mt-1.5 text-small leading-relaxed text-foreground">{generalError}</p>
-                <Link href="/cart" className="mt-2 inline-flex min-h-11 items-center border-b border-foreground font-mono text-[10px] uppercase tracking-[0.12em]">Review bag and continue</Link>
+                <Link href="/cart" className="mt-2 inline-flex min-h-11 items-center border-b border-foreground font-mono text-[10px] uppercase tracking-[0.12em]">{t('generalError.link')}</Link>
               </div>
             </div>
           </div>
@@ -1273,15 +1300,14 @@ export function CheckoutExperience({
               >
                 <SectionHeading
                   number="01"
-                  title="Client information"
-                  detail="We use these details to confirm your order and coordinate delivery."
+                  title={t('sections.client.title')}
+                  detail={t('sections.client.detail')}
                   id="client-heading"
-                  requiredLabel="Required"
                 />
                 <div className="grid grid-cols-1 gap-x-5 gap-y-5 sm:grid-cols-2">
                   <Field
                     id="customer-firstName"
-                    label="First name"
+                    label={t('fields.firstName')}
                     value={customer.firstName}
                     onChange={(value) => setCustomerField('firstName', value)}
                     error={getFieldError(fieldErrors, 'customer.firstName')}
@@ -1290,7 +1316,7 @@ export function CheckoutExperience({
                   />
                   <Field
                     id="customer-lastName"
-                    label="Last name"
+                    label={t('fields.lastName')}
                     value={customer.lastName}
                     onChange={(value) => setCustomerField('lastName', value)}
                     error={getFieldError(fieldErrors, 'customer.lastName')}
@@ -1299,22 +1325,22 @@ export function CheckoutExperience({
                   />
                   <Field
                     id="customer-email"
-                    label="Email address"
+                    label={t('fields.email')}
                     value={customer.email}
                     onChange={(value) => setCustomerField('email', value)}
                     error={getFieldError(fieldErrors, 'customer.email')}
-                    hint="Your order confirmation will be sent to this email."
+                    hint={t('fields.emailHint')}
                     type="email"
                     autoComplete="email"
                     disabled={isWorking}
                   />
                   <Field
                     id="customer-phone"
-                    label="Phone"
+                    label={t('fields.phone')}
                     value={customer.phone}
                     onChange={(value) => setCustomerField('phone', value)}
                     error={getFieldError(fieldErrors, 'customer.phone')}
-                    hint="Include a country code for consistent local record formatting."
+                    hint={t('fields.phoneHint')}
                     type="tel"
                     autoComplete="tel"
                     inputMode="tel"
@@ -1323,7 +1349,7 @@ export function CheckoutExperience({
                 </div>
                 <p className="mt-5 flex items-start gap-2 border-t border-border pt-4 text-[11px] leading-relaxed text-foreground-subtle">
                   <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                  Signed-in customers can track this order from their account. Guests receive every update by email.
+                  {t('sections.client.note')}
                 </p>
               </SectionFrame>
 
@@ -1333,15 +1359,14 @@ export function CheckoutExperience({
               >
                 <SectionHeading
                   number="02"
-                  title="Delivery address"
-                  detail="Where should we deliver your order?"
+                  title={t('sections.delivery.title')}
+                  detail={t('sections.delivery.detail')}
                   id="delivery-heading"
-                  requiredLabel="Required for local record"
                 />
                 <div className="grid grid-cols-1 gap-x-5 gap-y-5 sm:grid-cols-2">
                   <Field
                     id="shipping-firstName"
-                    label="First name"
+                    label={t('fields.firstName')}
                     value={shippingAddress.firstName}
                     onChange={(value) => setAddressField('shipping', 'firstName', value)}
                     error={getFieldError(fieldErrors, 'shipping.firstName')}
@@ -1350,7 +1375,7 @@ export function CheckoutExperience({
                   />
                   <Field
                     id="shipping-lastName"
-                    label="Last name"
+                    label={t('fields.lastName')}
                     value={shippingAddress.lastName}
                     onChange={(value) => setAddressField('shipping', 'lastName', value)}
                     error={getFieldError(fieldErrors, 'shipping.lastName')}
@@ -1359,16 +1384,16 @@ export function CheckoutExperience({
                   />
                   <SelectField
                     id="shipping-country"
-                    label="Country / Region"
+                    label={t('fields.country')}
                     value={shippingAddress.country}
                     onChange={(value) => setAddressField('shipping', 'country', value)}
-                    options={COUNTRIES.map((country) => ({ value: country, label: country }))}
+                    options={countrySelectOptions}
                     error={getFieldError(fieldErrors, 'shipping.country')}
                     disabled={isWorking}
                   />
                   <Field
                     id="shipping-company"
-                    label="Company / Studio"
+                    label={t('fields.company')}
                     value={shippingAddress.company}
                     onChange={(value) => setAddressField('shipping', 'company', value)}
                     error={getFieldError(fieldErrors, 'shipping.company')}
@@ -1379,7 +1404,7 @@ export function CheckoutExperience({
                   <div className="sm:col-span-2">
                     <Field
                       id="shipping-line1"
-                      label="Address"
+                      label={t('fields.line1')}
                       value={shippingAddress.line1}
                       onChange={(value) => setAddressField('shipping', 'line1', value)}
                       error={getFieldError(fieldErrors, 'shipping.line1')}
@@ -1390,7 +1415,7 @@ export function CheckoutExperience({
                   <div className="sm:col-span-2">
                     <Field
                       id="shipping-line2"
-                      label="Apartment / Suite / Floor"
+                      label={t('fields.line2')}
                       value={shippingAddress.line2}
                       onChange={(value) => setAddressField('shipping', 'line2', value)}
                       error={getFieldError(fieldErrors, 'shipping.line2')}
@@ -1401,7 +1426,7 @@ export function CheckoutExperience({
                   </div>
                   <Field
                     id="shipping-city"
-                    label="City"
+                    label={t('fields.city')}
                     value={shippingAddress.city}
                     onChange={(value) => setAddressField('shipping', 'city', value)}
                     error={getFieldError(fieldErrors, 'shipping.city')}
@@ -1410,7 +1435,7 @@ export function CheckoutExperience({
                   />
                   <Field
                     id="shipping-state"
-                    label="State / Province"
+                    label={t('fields.state')}
                     value={shippingAddress.state}
                     onChange={(value) => setAddressField('shipping', 'state', value)}
                     error={getFieldError(fieldErrors, 'shipping.state')}
@@ -1419,7 +1444,7 @@ export function CheckoutExperience({
                   />
                   <Field
                     id="shipping-postalCode"
-                    label="Postal code"
+                    label={t('fields.postalCode')}
                     value={shippingAddress.postalCode}
                     onChange={(value) => setAddressField('shipping', 'postalCode', value)}
                     error={getFieldError(fieldErrors, 'shipping.postalCode')}
@@ -1428,14 +1453,14 @@ export function CheckoutExperience({
                   />
                   <Field
                     id="shipping-phone"
-                    label="Delivery phone"
+                    label={t('fields.deliveryPhone')}
                     value={shippingAddress.phone || customer.phone}
                     onChange={(value) => setAddressField('shipping', 'phone', value)}
                     error={getFieldError(fieldErrors, 'shipping.phone')}
                     autoComplete="shipping tel"
                     type="tel"
                     inputMode="tel"
-                    hint="The courier may call this number on the day of delivery."
+                    hint={t('fields.deliveryPhoneHint')}
                     disabled={isWorking}
                   />
                 </div>
@@ -1443,10 +1468,10 @@ export function CheckoutExperience({
                 <div className="mt-7 border-t border-border pt-6">
                   <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                     <div>
-                      <PanelLabel>Delivery option</PanelLabel>
-                      <h3 className="mt-1.5 font-display text-base text-foreground">Choose a delivery option</h3>
+                      <PanelLabel>{t('sections.shipping.label')}</PanelLabel>
+                      <h3 className="mt-1.5 font-display text-base text-foreground">{t('sections.shipping.title')}</h3>
                     </div>
-                    {isLoadingShipping && <span className="inline-flex items-center gap-2 font-mono text-[9px] uppercase tracking-[0.12em] text-foreground-subtle"><RefreshCw className="h-3 w-3 animate-spin" aria-hidden="true" />Updating options</span>}
+                    {isLoadingShipping && <span className="inline-flex items-center gap-2 font-mono text-[9px] uppercase tracking-[0.12em] text-foreground-subtle"><RefreshCw className="h-3 w-3 animate-spin" aria-hidden="true" />{t('sections.shipping.updating')}</span>}
                   </div>
 
                   {shippingServiceError && (
@@ -1465,17 +1490,17 @@ export function CheckoutExperience({
                               setShippingMethods(response.data);
                               if (response.data[0]) handleShippingSelection(response.data[0].id);
                             })
-                            .catch(() => setShippingServiceError('Delivery options are still unavailable. Retry later or return to your bag.'));
+                            .catch(() => setShippingServiceError(t('messages.deliveryStillUnavailable')));
                         }}
                         className="mt-2 inline-flex min-h-11 items-center gap-2 border-b border-foreground font-mono text-[10px] uppercase tracking-[0.12em]"
                       >
-                        Retry <RefreshCw className="h-3 w-3" aria-hidden="true" />
+                        {t('sections.shipping.retry')} <RefreshCw className="h-3 w-3" aria-hidden="true" />
                       </button>
                     </div>
                   )}
 
                   <fieldset disabled={isWorking || isLoadingShipping || shippingMethods.length === 0}>
-                    <legend className="sr-only">Select a shipping method</legend>
+                    <legend className="sr-only">{t('sections.shipping.legend')}</legend>
                     <div className="divide-y divide-border border-y border-border">
                       {shippingMethods.map((method) => {
                         const checked = selectedShippingMethodId === method.id;
@@ -1502,7 +1527,7 @@ export function CheckoutExperience({
                               <span className="mt-1 block text-[10px] leading-relaxed text-foreground-subtle">{method.description}</span>
                             </span>
                             <span className="shrink-0 text-end font-mono text-xs tabular-nums text-foreground">
-                              {methodCost === 0 ? 'INCLUDED' : formatPrice(methodCost)}
+                              {methodCost === 0 ? t('sections.shipping.included') : formatPrice(methodCost)}
                             </span>
                           </label>
                         );
@@ -1511,7 +1536,7 @@ export function CheckoutExperience({
                   </fieldset>
                   <p className="mt-3 flex items-start gap-2 text-[10px] leading-relaxed text-foreground-subtle">
                     <Truck className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                    Delivery windows are estimates and start once your order is confirmed. You will receive tracking details by email when it ships.
+                    {t('sections.shipping.note')}
                   </p>
                 </div>
               </SectionFrame>
@@ -1522,13 +1547,12 @@ export function CheckoutExperience({
               >
                 <SectionHeading
                   number="03"
-                  title="Payment"
-                  detail="Choose how you would like to pay. Nothing is charged online — our team confirms the order with you first."
+                  title={t('sections.payment.title')}
+                  detail={t('sections.payment.detail')}
                   id="settlement-heading"
-                  requiredLabel="Required"
                 />
                 <fieldset disabled={isWorking} aria-describedby={fieldErrors['payment.method'] ? 'payment-method-error' : undefined}>
-                  <legend className="sr-only">Payment method</legend>
+                  <legend className="sr-only">{t('payment.legend')}</legend>
                   <div className="divide-y divide-border border-y border-border">
                     {paymentOptions.map((option) => {
                       const checked = paymentMethodType === option.id;
@@ -1563,7 +1587,7 @@ export function CheckoutExperience({
                 {fieldErrors['payment.method'] && <p id="payment-method-error" role="alert" className="mt-2 font-mono text-caption text-danger">{fieldErrors['payment.method']}</p>}
                 <p className="mt-3 flex items-start gap-2 text-[10px] leading-relaxed text-foreground-subtle">
                   <LockKeyhole className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                  No card details are collected on this site. Your order stays reserved while payment is pending and is marked paid once our team confirms it.
+                  {t('payment.noCard')}
                 </p>
 
                 <div className="mt-6 border-t border-border pt-5">
@@ -1575,33 +1599,33 @@ export function CheckoutExperience({
                       disabled={isWorking}
                       className="mt-0.5 h-4 w-4 accent-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground"
                     />
-                    <span>Billing address is the same as delivery address</span>
+                    <span>{t('sections.billing.same')}</span>
                   </label>
                 </div>
 
                 {!billingSameAsShipping && (
                   <div className="mt-5 border-t border-border pt-6">
                     <div className="mb-5">
-                      <PanelLabel>Billing // separate destination</PanelLabel>
-                      <h3 className="mt-1.5 font-display text-base text-foreground">Billing address</h3>
+                      <PanelLabel>{t('sections.billing.label')}</PanelLabel>
+                      <h3 className="mt-1.5 font-display text-base text-foreground">{t('sections.billing.title')}</h3>
                     </div>
                     <div className="grid grid-cols-1 gap-x-5 gap-y-5 sm:grid-cols-2">
-                      <Field id="billing-firstName" label="First name" value={billingAddress.firstName} onChange={(value) => setAddressField('billing', 'firstName', value)} error={getFieldError(fieldErrors, 'billing.firstName')} autoComplete="billing given-name" disabled={isWorking} />
-                      <Field id="billing-lastName" label="Last name" value={billingAddress.lastName} onChange={(value) => setAddressField('billing', 'lastName', value)} error={getFieldError(fieldErrors, 'billing.lastName')} autoComplete="billing family-name" disabled={isWorking} />
-                      <SelectField id="billing-country" label="Country / Region" value={billingAddress.country} onChange={(value) => setAddressField('billing', 'country', value)} options={COUNTRIES.map((country) => ({ value: country, label: country }))} error={getFieldError(fieldErrors, 'billing.country')} disabled={isWorking} />
-                      <Field id="billing-company" label="Company / Studio" value={billingAddress.company} onChange={(value) => setAddressField('billing', 'company', value)} error={getFieldError(fieldErrors, 'billing.company')} autoComplete="billing organization" required={false} disabled={isWorking} />
-                      <div className="sm:col-span-2"><Field id="billing-line1" label="Address" value={billingAddress.line1} onChange={(value) => setAddressField('billing', 'line1', value)} error={getFieldError(fieldErrors, 'billing.line1')} autoComplete="billing address-line1" disabled={isWorking} /></div>
-                      <div className="sm:col-span-2"><Field id="billing-line2" label="Apartment / Suite / Floor" value={billingAddress.line2} onChange={(value) => setAddressField('billing', 'line2', value)} error={getFieldError(fieldErrors, 'billing.line2')} autoComplete="billing address-line2" required={false} disabled={isWorking} /></div>
-                      <Field id="billing-city" label="City" value={billingAddress.city} onChange={(value) => setAddressField('billing', 'city', value)} error={getFieldError(fieldErrors, 'billing.city')} autoComplete="billing address-level2" disabled={isWorking} />
-                      <Field id="billing-state" label="State / Province" value={billingAddress.state} onChange={(value) => setAddressField('billing', 'state', value)} error={getFieldError(fieldErrors, 'billing.state')} autoComplete="billing address-level1" disabled={isWorking} />
-                      <Field id="billing-postalCode" label="Postal code" value={billingAddress.postalCode} onChange={(value) => setAddressField('billing', 'postalCode', value)} error={getFieldError(fieldErrors, 'billing.postalCode')} autoComplete="billing postal-code" disabled={isWorking} />
-                      <Field id="billing-phone" label="Phone" value={billingAddress.phone || customer.phone} onChange={(value) => setAddressField('billing', 'phone', value)} error={getFieldError(fieldErrors, 'billing.phone')} autoComplete="billing tel" type="tel" inputMode="tel" disabled={isWorking} />
+                      <Field id="billing-firstName" label={t('fields.firstName')} value={billingAddress.firstName} onChange={(value) => setAddressField('billing', 'firstName', value)} error={getFieldError(fieldErrors, 'billing.firstName')} autoComplete="billing given-name" disabled={isWorking} />
+                      <Field id="billing-lastName" label={t('fields.lastName')} value={billingAddress.lastName} onChange={(value) => setAddressField('billing', 'lastName', value)} error={getFieldError(fieldErrors, 'billing.lastName')} autoComplete="billing family-name" disabled={isWorking} />
+                      <SelectField id="billing-country" label={t('fields.country')} value={billingAddress.country} onChange={(value) => setAddressField('billing', 'country', value)} options={countrySelectOptions} error={getFieldError(fieldErrors, 'billing.country')} disabled={isWorking} />
+                      <Field id="billing-company" label={t('fields.company')} value={billingAddress.company} onChange={(value) => setAddressField('billing', 'company', value)} error={getFieldError(fieldErrors, 'billing.company')} autoComplete="billing organization" required={false} disabled={isWorking} />
+                      <div className="sm:col-span-2"><Field id="billing-line1" label={t('fields.line1')} value={billingAddress.line1} onChange={(value) => setAddressField('billing', 'line1', value)} error={getFieldError(fieldErrors, 'billing.line1')} autoComplete="billing address-line1" disabled={isWorking} /></div>
+                      <div className="sm:col-span-2"><Field id="billing-line2" label={t('fields.line2')} value={billingAddress.line2} onChange={(value) => setAddressField('billing', 'line2', value)} error={getFieldError(fieldErrors, 'billing.line2')} autoComplete="billing address-line2" required={false} disabled={isWorking} /></div>
+                      <Field id="billing-city" label={t('fields.city')} value={billingAddress.city} onChange={(value) => setAddressField('billing', 'city', value)} error={getFieldError(fieldErrors, 'billing.city')} autoComplete="billing address-level2" disabled={isWorking} />
+                      <Field id="billing-state" label={t('fields.state')} value={billingAddress.state} onChange={(value) => setAddressField('billing', 'state', value)} error={getFieldError(fieldErrors, 'billing.state')} autoComplete="billing address-level1" disabled={isWorking} />
+                      <Field id="billing-postalCode" label={t('fields.postalCode')} value={billingAddress.postalCode} onChange={(value) => setAddressField('billing', 'postalCode', value)} error={getFieldError(fieldErrors, 'billing.postalCode')} autoComplete="billing postal-code" disabled={isWorking} />
+                      <Field id="billing-phone" label={t('fields.phone')} value={billingAddress.phone || customer.phone} onChange={(value) => setAddressField('billing', 'phone', value)} error={getFieldError(fieldErrors, 'billing.phone')} autoComplete="billing tel" type="tel" inputMode="tel" disabled={isWorking} />
                     </div>
                   </div>
                 )}
 
                 <div className="mt-6 border-t border-border pt-5">
-                  <label htmlFor="checkout-notes" className="mb-2 block font-mono text-label uppercase tracking-[0.12em] text-foreground">Private dispatch note <span className="text-foreground-subtle">{'// optional'}</span></label>
+                  <label htmlFor="checkout-notes" className="mb-2 block font-mono text-label uppercase tracking-[0.12em] text-foreground">{t('sections.notes.label')} <span className="text-foreground-subtle">{t('optional')}</span></label>
                   <textarea
                     id="checkout-notes"
                     rows={3}
@@ -1609,10 +1633,10 @@ export function CheckoutExperience({
                     value={notes}
                     onChange={(event) => setNotes(event.target.value)}
                     disabled={isWorking}
-                    placeholder="Access notes, preferred receiving window, or commissioning detail"
+                    placeholder={t('sections.notes.placeholder')}
                     className="w-full resize-y border border-border bg-surface px-3.5 py-3 text-small text-foreground placeholder:text-foreground-subtle focus:border-foreground focus:outline-none disabled:opacity-50"
                   />
-                  <p className="mt-2 text-[10px] text-foreground-subtle">{notes.length} / 500 characters</p>
+                  <p className="mt-2 text-[10px] text-foreground-subtle">{t('sections.notes.counter', { count: notes.length })}</p>
                 </div>
               </SectionFrame>
 
@@ -1626,15 +1650,15 @@ export function CheckoutExperience({
                 >
                   <SectionHeading
                     number="04"
-                    title="Final review"
-                    detail="Check your details before placing the order. You can still edit any section."
+                    title={t('sections.review.title')}
+                    detail={t('sections.review.detail')}
                     id="review-heading"
-                    requiredLabel="Final step"
+                    requiredLabel={t('sections.review.finalStep')}
                   />
                   <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                     <ReviewBlock
-                      title="Client"
-                      editLabel="Edit client"
+                      title={t('sections.review.client')}
+                      editLabel={t('sections.review.editClient')}
                       onEdit={() => scrollToSection('client')}
                     >
                       <p className="text-small font-medium text-foreground">{customer.firstName} {customer.lastName}</p>
@@ -1642,8 +1666,8 @@ export function CheckoutExperience({
                       <p className="mt-1 text-small text-foreground-muted">{customer.phone}</p>
                     </ReviewBlock>
                     <ReviewBlock
-                      title="Delivery"
-                      editLabel="Edit address"
+                      title={t('sections.review.delivery')}
+                      editLabel={t('sections.review.editAddress')}
                       onEdit={() => scrollToSection('delivery')}
                     >
                       <p className="text-small font-medium text-foreground">{shippingAddress.firstName} {shippingAddress.lastName}</p>
@@ -1654,8 +1678,8 @@ export function CheckoutExperience({
                     </ReviewBlock>
                     {!billingSameAsShipping && (
                       <ReviewBlock
-                        title="Billing address"
-                        editLabel="Edit billing"
+                        title={t('sections.review.billing')}
+                        editLabel={t('sections.review.editBilling')}
                         onEdit={() => scrollToSection('settlement')}
                       >
                         <p className="text-small font-medium text-foreground">{billingAddress.firstName} {billingAddress.lastName}</p>
@@ -1665,24 +1689,24 @@ export function CheckoutExperience({
                       </ReviewBlock>
                     )}
                     <ReviewBlock
-                      title="Delivery option"
-                      editLabel="Edit delivery"
+                      title={t('sections.review.deliveryOption')}
+                      editLabel={t('sections.review.editDelivery')}
                       onEdit={() => scrollToSection('delivery')}
                     >
-                      <p className="text-small font-medium text-foreground">{selectedShippingOption?.name ?? 'Unavailable'}</p>
+                      <p className="text-small font-medium text-foreground">{selectedShippingOption?.name ?? t('sections.review.unavailable')}</p>
                       <p className="mt-1 text-small text-foreground-muted">{selectedShippingOption?.estimatedWindow}</p>
                       <p className="mt-1 text-small text-foreground-muted">{selectedShippingOption?.estimatedDispatch}</p>
                     </ReviewBlock>
                     <ReviewBlock
-                      title="Payment method"
-                      editLabel="Edit payment"
+                      title={t('sections.review.paymentMethod')}
+                      editLabel={t('sections.review.editPayment')}
                       onEdit={() => scrollToSection('settlement')}
                     >
-                      <p className="text-small font-medium text-foreground">{paymentLabel(reviewPaymentMethod ?? paymentMethodType)}</p>
+                      <p className="text-small font-medium text-foreground">{paymentLabel(t, reviewPaymentMethod ?? paymentMethodType)}</p>
                       <p className="mt-1 text-small text-foreground-muted">
                         {(reviewPaymentMethod ?? paymentMethodType) === 'bank_transfer'
-                          ? 'Bank details follow in your confirmation; we dispatch once the transfer is confirmed.'
-                          : 'Pay the courier when your order arrives.'}
+                          ? t('payment.reviewBank')
+                          : t('payment.reviewCash')}
                       </p>
                     </ReviewBlock>
                   </div>
@@ -1690,23 +1714,23 @@ export function CheckoutExperience({
                   <div className="mt-6 border-t border-border pt-5">
                     <div className="flex flex-wrap items-end justify-between gap-3">
                       <div>
-                        <PanelLabel>Items // {itemCountLabel}</PanelLabel>
-                        <h3 className="mt-1.5 font-display text-base text-foreground">In this order</h3>
+                        <PanelLabel>{t('sections.review.items', { units: itemCountLabel })}</PanelLabel>
+                        <h3 className="mt-1.5 font-display text-base text-foreground">{t('sections.review.inOrder')}</h3>
                       </div>
-                      <Link href="/cart" className="inline-flex min-h-11 items-center border-b border-border-strong/70 font-mono text-[9px] uppercase tracking-[0.12em] text-foreground-muted">Edit items</Link>
+                      <Link href="/cart" className="inline-flex min-h-11 items-center border-b border-border-strong/70 font-mono text-[9px] uppercase tracking-[0.12em] text-foreground-muted">{t('sections.review.editItems')}</Link>
                     </div>
                     <AllocationLines items={cart} lineTotals={cartLineTotals} />
                   </div>
                   <div className="mt-2 grid grid-cols-1 gap-6 border-t border-border pt-5 sm:grid-cols-2">
                     <div>
-                      <PanelLabel>Discount</PanelLabel>
+                      <PanelLabel>{t('sections.review.discount')}</PanelLabel>
                       <p className="mt-2 text-small text-foreground">
-                        {appliedDiscount ? `${appliedDiscount.code} — ${appliedDiscount.description}` : 'No discount code applied'}
+                        {appliedDiscount ? `${appliedDiscount.code} — ${appliedDiscount.description}` : t('sections.review.noDiscount')}
                       </p>
                     </div>
                     <div className="sm:text-end">
-                      <PanelLabel>Tax</PanelLabel>
-                      <p className="mt-2 text-small text-foreground">{taxAmount === 0 ? 'Included in the listed prices.' : formatPrice(taxAmount)}</p>
+                      <PanelLabel>{t('sections.review.tax')}</PanelLabel>
+                      <p className="mt-2 text-small text-foreground">{taxAmount === 0 ? t('sections.review.taxIncluded') : formatPrice(taxAmount)}</p>
                     </div>
                   </div>
                   <div className="mt-5 border-t border-border pt-5">
@@ -1719,17 +1743,17 @@ export function CheckoutExperience({
                   </div>
 
                   <div className="mt-6 border border-accent/30 bg-accent/5 p-4 text-[11px] leading-relaxed text-foreground-muted">
-                    <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-accent">What happens next</p>
-                    <p className="mt-2">Placing the order reserves your items and sends a confirmation email with your order number. Our team then confirms the order with you and arranges payment on delivery or by bank transfer before dispatch.</p>
+                    <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-accent">{t('sections.review.nextTitle')}</p>
+                    <p className="mt-2">{t('sections.review.nextBody')}</p>
                   </div>
                 </section>
               )}
 
               <div className="flex flex-wrap items-center justify-between gap-4 px-1">
                 <Link href="/cart" className="inline-flex min-h-11 items-center gap-2 font-mono text-[10px] uppercase tracking-[0.12em] text-foreground-muted hover:text-foreground">
-                  <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" /> Back to bag
+                  <ArrowLeft className="h-3.5 w-3.5 rtl:rotate-180" aria-hidden="true" /> {t('backToBag')}
                 </Link>
-                <p className="flex items-center gap-2 text-[10px] text-foreground-subtle"><ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" /> Your details are transmitted securely and stored only with your order</p>
+                <p className="flex items-center gap-2 text-[10px] text-foreground-subtle"><ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" /> {t('sections.review.secure')}</p>
               </div>
             </div>
 
@@ -1737,8 +1761,8 @@ export function CheckoutExperience({
               <div className="border border-border bg-surface p-5 sm:p-7 lg:sticky lg:top-28 lg:p-8">
                 <div className="flex items-start justify-between gap-4 border-b border-border pb-5">
                   <div>
-                    <PanelLabel>Order summary</PanelLabel>
-                    <h2 className="mt-2 font-display text-h3 text-foreground">Summary</h2>
+                    <PanelLabel>{t('summary.label')}</PanelLabel>
+                    <h2 className="mt-2 font-display text-h3 text-foreground">{t('summary.title')}</h2>
                   </div>
                   <span className="font-mono text-[10px] tabular-nums text-foreground-subtle">{itemCountLabel}</span>
                 </div>
@@ -1750,7 +1774,7 @@ export function CheckoutExperience({
                 <div className="border-t border-border pt-5">
                   <div className="mb-3 flex items-center gap-2">
                     <Tag className="h-3.5 w-3.5 text-foreground-subtle" aria-hidden="true" />
-                    <PanelLabel>Discount code</PanelLabel>
+                    <PanelLabel>{t('summary.discountCode')}</PanelLabel>
                   </div>
                   {appliedDiscount ? (
                     <div className="border border-success/30 bg-success/5 p-3.5">
@@ -1764,12 +1788,12 @@ export function CheckoutExperience({
                           type="button"
                           onClick={() => {
                             removeDiscountCode();
-                            setPromoMessage('Discount code removed.');
+                            setPromoMessage(t('messages.promoRemoved'));
                             setPromoError(false);
                           }}
                           className="min-h-11 shrink-0 border-b border-border-strong font-mono text-[9px] uppercase tracking-[0.1em] text-foreground-muted hover:text-danger"
                         >
-                          Remove
+                          {t('summary.remove')}
                         </button>
                       </div>
                     </div>
@@ -1778,7 +1802,7 @@ export function CheckoutExperience({
                       <div className="min-w-0 flex-1">
                         <Input
                           id="checkout-promo-code"
-                          label="Code"
+                          label={t('summary.code')}
                           value={promoCode}
                           onChange={(event) => setPromoCode(event.target.value.toUpperCase())}
                           onKeyDown={(event) => {
@@ -1787,13 +1811,13 @@ export function CheckoutExperience({
                               void applyPromo();
                             }
                           }}
-                          placeholder="ENTER CODE"
+                          placeholder={t('summary.placeholder')}
                           autoComplete="off"
                           disabled={isWorking || isApplyingPromo}
                         />
                       </div>
                       <Button type="button" variant="outline" size="md" isLoading={isApplyingPromo} onClick={() => void applyPromo()} disabled={!promoCode.trim() || isWorking} className="h-11 px-3.5">
-                        Apply
+                        {t('summary.apply')}
                       </Button>
                     </div>
                   )}
@@ -1815,16 +1839,16 @@ export function CheckoutExperience({
                   aria-expanded={showTaxNote}
                   className="mt-4 inline-flex min-h-11 items-center gap-2 text-start font-mono text-[9px] uppercase tracking-[0.11em] text-foreground-subtle hover:text-foreground"
                 >
-                  <Info className="h-3 w-3" aria-hidden="true" /> About taxes and duties
+                  <Info className="h-3 w-3" aria-hidden="true" /> {t('summary.taxInfo')}
                 </button>
                 {showTaxNote && (
                   <p className="mb-3 border-s border-border-strong ps-3 text-[10px] leading-relaxed text-foreground-subtle">
-                    Prices include applicable taxes. Import duties, where they apply, are settled by the recipient on delivery.
+                    {t('summary.taxNote')}
                   </p>
                 )}
 
                 {orderAttemptStatus && <p role="status" className="mt-3 text-[10px] leading-relaxed text-foreground-muted">{orderAttemptStatus}</p>}
-                {paymentState === 'failed' && <p role="status" className="mt-3 text-[10px] leading-relaxed text-danger">The prior attempt did not complete. Your bag remains available; review the flagged section and retry.</p>}
+                {paymentState === 'failed' && <p role="status" className="mt-3 text-[10px] leading-relaxed text-danger">{t('summary.failed')}</p>}
 
                 <Button
                   type="submit"
@@ -1836,15 +1860,15 @@ export function CheckoutExperience({
                   rightIcon={!isWorking ? <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" /> : undefined}
                   className="mt-5 min-h-12"
                 >
-                  {activeSection === 'review' ? 'Place Order' : 'Review & Place Order'}
+                  {activeSection === 'review' ? t('summary.placeOrder') : t('summary.reviewAndPlace')}
                 </Button>
                 <p className="mt-3 text-center font-mono text-[9px] uppercase tracking-[0.1em] text-foreground-subtle">
-                  {`${paymentLabel(paymentMethodType)} // confirmed by our team before dispatch`}
+                  {t('payment.confirmedNote', { method: paymentLabel(t, paymentMethodType) })}
                 </p>
                 <div className="mt-5 grid grid-cols-3 gap-2 border-t border-border pt-4 text-center">
-                  <div className="px-1"><ShieldCheck className="mx-auto h-4 w-4 text-foreground-muted" aria-hidden="true" /><span className="mt-2 block font-mono text-[8px] uppercase tracking-[0.1em] text-foreground-subtle">Order<br />confirmation</span></div>
-                  <div className="border-x border-border px-1"><MapPin className="mx-auto h-4 w-4 text-foreground-muted" aria-hidden="true" /><span className="mt-2 block font-mono text-[8px] uppercase tracking-[0.1em] text-foreground-subtle">Tracked<br />delivery</span></div>
-                  <div className="px-1"><LockKeyhole className="mx-auto h-4 w-4 text-foreground-muted" aria-hidden="true" /><span className="mt-2 block font-mono text-[8px] uppercase tracking-[0.1em] text-foreground-subtle">No card<br />details stored</span></div>
+                  <div className="px-1"><ShieldCheck className="mx-auto h-4 w-4 text-foreground-muted" aria-hidden="true" /><span className="mt-2 block font-mono text-[8px] uppercase tracking-[0.1em] text-foreground-subtle">{t('summary.trust1')}</span></div>
+                  <div className="border-x border-border px-1"><MapPin className="mx-auto h-4 w-4 text-foreground-muted" aria-hidden="true" /><span className="mt-2 block font-mono text-[8px] uppercase tracking-[0.1em] text-foreground-subtle">{t('summary.trust2')}</span></div>
+                  <div className="px-1"><LockKeyhole className="mx-auto h-4 w-4 text-foreground-muted" aria-hidden="true" /><span className="mt-2 block font-mono text-[8px] uppercase tracking-[0.1em] text-foreground-subtle">{t('summary.trust3')}</span></div>
                 </div>
               </div>
             </aside>
@@ -1853,7 +1877,7 @@ export function CheckoutExperience({
           <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background px-4 pt-3 lg:hidden" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
             <div className="mx-auto flex max-w-xl items-center gap-3">
               <div className="min-w-0 flex-1">
-                <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-foreground-subtle">{`${itemCountLabel} // EST. TOTAL`}</p>
+                <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-foreground-subtle">{t('summary.stickyTotal', { units: itemCountLabel })}</p>
                 <PriceDisplay price={cartTotal} size="md" />
               </div>
               <Button
@@ -1865,7 +1889,7 @@ export function CheckoutExperience({
                 withArrow={activeSection === 'review' ? undefined : 'right'}
                 className="min-h-12 max-w-[58%] px-4 text-[10px] leading-tight"
               >
-                {activeSection === 'review' ? 'Place Order' : 'Review & Place Order'}
+                {activeSection === 'review' ? t('summary.placeOrder') : t('summary.reviewAndPlace')}
               </Button>
             </div>
           </div>

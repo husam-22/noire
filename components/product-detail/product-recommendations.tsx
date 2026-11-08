@@ -2,6 +2,7 @@
 
 import React, { useMemo } from 'react';
 import { Link } from '@/i18n/navigation';
+import { useTranslations } from 'next-intl';
 import { ArrowUpRight, History } from 'lucide-react';
 import { Container, Section } from '@/components/layout';
 import { Reveal } from '@/components/motion';
@@ -21,6 +22,7 @@ export function ProductRecommendations({
   relatedProducts,
   allProducts,
 }: ProductRecommendationsProps) {
+  const t = useTranslations('productDetail.related');
   const { recentlyViewedIds } = useCommerce();
 
   // Deduplicated, chronologically ordered recently viewed products excluding current product
@@ -61,19 +63,19 @@ export function ProductRecommendations({
               <div className="space-y-3">
                 <div className="flex flex-wrap items-center gap-3">
                   <Eyebrow index="06" tone="accent">
-                    COMPLEMENTARY ARCHITECTURE
+                    {t('eyebrow')}
                   </Eyebrow>
                   <TechnicalCode>
-                    SYSTEM PAIRING // {currentProduct.categoryName.toUpperCase()}
+                    {t('code', { category: currentProduct.categoryName.toUpperCase() })}
                   </TechnicalCode>
                 </div>
                 <h2
                   id="pdp-related-heading"
                   className="font-display text-h1 tracking-tighter text-foreground"
                 >
-                  Engineered to Operate{' '}
+                  {t('title')}{' '}
                   <span className="font-normal italic text-foreground-muted">
-                    in Concert.
+                    {t('titleAccent')}
                   </span>
                 </h2>
               </div>
@@ -82,7 +84,7 @@ export function ProductRecommendations({
                 href={`/shop?category=${currentProduct.category}`}
                 className="inline-flex items-center gap-2 font-mono text-xs uppercase tracking-[0.14em] text-foreground underline underline-offset-8 transition-colors hover:text-accent"
               >
-                <span>Explore All {currentProduct.categoryName}</span>
+                <span>{t('exploreAll', { category: currentProduct.categoryName })}</span>
                 <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
               </Link>
             </Reveal>
@@ -93,7 +95,7 @@ export function ProductRecommendations({
                 <Reveal>
                   <ProductCard
                     product={leadRelated}
-                    indexLabel="01 // PRIMARY SYSTEM COMPANION"
+                    indexLabel={t('primary')}
                     variant="large-split"
                   />
                 </Reveal>
@@ -105,7 +107,7 @@ export function ProductRecommendations({
                     <Reveal className="lg:col-span-7">
                       <ProductCard
                         product={secondaryRelated[0]}
-                        indexLabel="02 // COMPLEMENTARY INSTRUMENT"
+                        indexLabel={t('secondary', { index: 2 })}
                         aspect="landscape"
                       />
                     </Reveal>
@@ -115,7 +117,7 @@ export function ProductRecommendations({
                     <Reveal delay={0.08} className="lg:col-span-5">
                       <ProductCard
                         product={secondaryRelated[1]}
-                        indexLabel="03 // COMPLEMENTARY INSTRUMENT"
+                        indexLabel={t('secondary', { index: 3 })}
                         aspect="portrait"
                       />
                     </Reveal>
@@ -147,13 +149,12 @@ export function ProductRecommendations({
                   id="pdp-recent-heading"
                   className="font-mono text-xs uppercase tracking-[0.16em] text-foreground"
                 >
-                  07 // RECENTLY INSPECTED IN YOUR SESSION
+                  {t('recentTitle')}
                 </h2>
               </div>
 
               <TechnicalCode>
-                {String(recentlyViewedProducts.length).padStart(2, '0')} ARCHIVE
-                RECORDS
+                {t('recentCount', { count: String(recentlyViewedProducts.length).padStart(2, '0') })}
               </TechnicalCode>
             </Reveal>
 
@@ -162,7 +163,7 @@ export function ProductRecommendations({
                 <Reveal key={item.id} delay={idx * 0.05}>
                   <ProductCard
                     product={item}
-                    indexLabel={`RECENT // 0${idx + 1}`}
+                    indexLabel={t('recentIndex', { index: idx + 1 })}
                     variant="minimal"
                     aspect="portrait"
                   />

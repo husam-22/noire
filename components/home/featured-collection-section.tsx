@@ -318,7 +318,7 @@ export function FeaturedCollectionSection({
                         <button
                           type="button"
                           onClick={() => setQuickViewProduct(product)}
-                          aria-label={`Quick inspect ${product.name}`}
+                          aria-label={t('quickInspect', { name: product.name })}
                           className="border border-border px-1.5 py-1 font-mono text-[10px] uppercase tracking-[0.12em] text-foreground-muted transition-colors hover:border-foreground hover:text-foreground sm:px-2"
                         >
                           {t('inspect')}

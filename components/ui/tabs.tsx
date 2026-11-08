@@ -2,6 +2,7 @@
 
 import React, { useState, useId, useRef } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
+import { useTranslations } from 'next-intl';
 import { NOIRE_MOTION_TOKENS } from '@/lib/design-system/tokens';
 import { cn } from '@/lib/utils';
 
@@ -16,7 +17,7 @@ export function Tabs({
   items,
   defaultTabId,
   onChange,
-  ariaLabel = 'Content sections',
+  ariaLabel,
   className,
 }: {
   items: TabItem[];
@@ -25,6 +26,7 @@ export function Tabs({
   ariaLabel?: string;
   className?: string;
 }) {
+  const tCommon = useTranslations('common');
   const instanceId = useId();
   const prefersReducedMotion = Boolean(useReducedMotion());
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
@@ -71,7 +73,7 @@ export function Tabs({
     <div className={cn('w-full', className)}>
       <div
         role="tablist"
-        aria-label={ariaLabel}
+        aria-label={ariaLabel ?? tCommon('tabs')}
         aria-orientation="horizontal"
         className="flex items-center gap-5 overflow-x-auto border-b border-border sm:gap-6 no-scrollbar"
       >

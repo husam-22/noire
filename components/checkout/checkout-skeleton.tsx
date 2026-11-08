@@ -1,12 +1,14 @@
 import React from 'react';
+import { useTranslations } from 'next-intl';
 import { Container } from '@/components/layout';
 import { Skeleton } from '@/components/ui';
 
 export function CheckoutSkeleton() {
+  const t = useTranslations('checkout');
   return (
     <div
       aria-busy="true"
-      aria-label="Loading allocation checkout dossier"
+      aria-label={t('loading')}
       className="min-h-screen bg-background pt-20 text-foreground"
     >
       <div className="border-b border-border py-3.5">

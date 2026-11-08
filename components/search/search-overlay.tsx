@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from '@/i18n/navigation';
+import { useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import {
@@ -64,6 +65,7 @@ export function SearchOverlay({
   initialCategories,
   initialFeaturedProducts,
 }: SearchOverlayProps) {
+  const t = useTranslations('search');
   const {
     isSearchOpen,
     setIsSearchOpen,
@@ -252,7 +254,7 @@ export function SearchOverlay({
             ref={containerRef}
             role="dialog"
             aria-modal="true"
-            aria-label="NOIRÉ Catalog & Monograph Search"
+            aria-label={t('overlayLabel')}
             tabIndex={-1}
             initial={
               prefersReducedMotion
@@ -278,11 +280,10 @@ export function SearchOverlay({
               <Container className="py-4 sm:py-6">
                 <div className="mb-2 flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
-                    <TechnicalCode>{'SEARCH // CATALOG & MONOGRAPHS'}</TechnicalCode>
+                    <TechnicalCode>{t('code')}</TechnicalCode>
                     {hasActiveQuery && !isLoading && results && (
                       <Badge variant="obsidian">
-                        {results.totalMatches}{' '}
-                        {results.totalMatches === 1 ? 'MATCH' : 'MATCHES'}
+                        {t('matches', { count: results.totalMatches })}
                       </Badge>
                     )}
                   </div>
@@ -291,13 +292,13 @@ export function SearchOverlay({
                       <kbd className="border border-border bg-background px-1.5 py-0.5 text-[10px]">
                         ↑↓
                       </kbd>{' '}
-                      Navigate
+                      {t('navigate')}
                     </span>
                     <span className="inline-flex items-center gap-1">
                       <kbd className="border border-border bg-background px-1.5 py-0.5 text-[10px]">
                         ESC
                       </kbd>{' '}
-                      Dismiss
+                      {t('dismiss')}
                     </span>
                   </div>
                 </div>
@@ -312,8 +313,8 @@ export function SearchOverlay({
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     onKeyDown={handleInputKeyDown}
-                    aria-label="Search instruments, model numbers, materials, or categories"
-                    placeholder="Search instruments, model codes (NR-01), or materials (Titanium, 6061)..."
+                    aria-label={t('inputLabel')}
+                    placeholder={t('placeholder')}
                     className="h-12 w-full bg-transparent font-display text-lg font-medium tracking-tight text-foreground placeholder:text-foreground-subtle/70 focus:outline-none sm:h-14 sm:text-2xl"
                   />
 
@@ -321,7 +322,7 @@ export function SearchOverlay({
                     <button
                       type="button"
                       onClick={() => setQuery('')}
-                      aria-label="Clear search query"
+                      aria-label={t('clear')}
                       className="shrink-0 rounded-xs border border-border bg-background px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.12em] text-foreground-muted transition-colors hover:border-foreground hover:text-foreground"
                     >
                       Clear
@@ -331,7 +332,7 @@ export function SearchOverlay({
                   <button
                     type="button"
                     onClick={onClose}
-                    aria-label="Close search overlay"
+                    aria-label={t('close')}
                     className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xs border border-border bg-background text-foreground-muted transition-colors hover:border-foreground hover:text-foreground"
                   >
                     <X className="h-4 w-4" aria-hidden="true" />
@@ -348,7 +349,7 @@ export function SearchOverlay({
                   <div
                     role="status"
                     aria-live="polite"
-                    aria-label="Searching catalog"
+                    aria-label={t('searching')}
                     className="grid grid-cols-1 gap-8 lg:grid-cols-12"
                   >
                     <div className="space-y-4 lg:col-span-4">
@@ -379,16 +380,16 @@ export function SearchOverlay({
                 {noMatchesFound && (
                   <div className="space-y-8">
                     <EmptyState
-                      code="SEARCH // 00 MATCHES"
-                      title={`No Instruments Match "${query}"`}
-                      description="Verify the model code (e.g. NR-01 through NR-12) or explore our core acoustic, lighting, and desk architecture categories below."
+                      code={t('noResultsCode')}
+                      title={t('noResultsTitle', { query })}
+                      description={t('noResultsDescription')}
                       primaryAction={
                         <Button
                           variant="primary"
                           size="sm"
                           onClick={() => setQuery('')}
                         >
-                          Reset Search Query
+                          {t('reset')}
                         </Button>
                       }
                       secondaryAction={
@@ -397,7 +398,7 @@ export function SearchOverlay({
                           size="sm"
                           onClick={() => applyQuickQuery('Titanium')}
                         >
-                          Explore Titanium Instruments
+                          {t('exploreTitanium')}
                         </Button>
                       }
                     />
@@ -405,7 +406,7 @@ export function SearchOverlay({
                     {/* Suggested Category Recovery */}
                     <div className="space-y-3">
                       <TechnicalCode>
-                        {'SUGGESTED ARCHITECTURAL DEPARTMENTS'}
+                        {t('suggestedCategories')}
                       </TechnicalCode>
                       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                         {initialCategories.map((cat) => (
@@ -441,7 +442,7 @@ export function SearchOverlay({
                         <div className="flex items-center justify-between">
                           <span className="inline-flex items-center gap-2 font-mono text-label uppercase text-foreground-subtle">
                             <Clock className="h-3 w-3" aria-hidden="true" />
-                            Recent Queries
+                            {t('recent')}
                           </span>
                           {recentSearches.length > 0 && (
                             <button
@@ -449,7 +450,7 @@ export function SearchOverlay({
                               onClick={clearRecentSearches}
                               className="font-mono text-[10px] uppercase tracking-[0.12em] text-foreground-subtle transition-colors hover:text-foreground"
                             >
-                              Clear All
+                              {t('clearAll')}
                             </button>
                           )}
                         </div>
@@ -457,7 +458,7 @@ export function SearchOverlay({
                         {recentSearches.length === 0 ? (
                           <div className="border border-dashed border-border bg-surface/50 p-4">
                             <p className="font-mono text-[11px] text-foreground-subtle">
-                              No recent search history recorded in this session.
+                              {t('noRecent')}
                             </p>
                           </div>
                         ) : (
@@ -481,7 +482,7 @@ export function SearchOverlay({
                                 <button
                                   type="button"
                                   onClick={() => removeRecentSearch(item)}
-                                  aria-label={`Remove ${item} from recent searches`}
+                                  aria-label={t('removeRecent', { item })}
                                   className="p-1 text-foreground-subtle hover:text-foreground"
                                 >
                                   <X className="h-3 w-3" />
@@ -496,7 +497,7 @@ export function SearchOverlay({
                       <div className="space-y-3.5">
                         <span className="inline-flex items-center gap-2 font-mono text-label uppercase text-foreground-subtle">
                           <TrendingUp className="h-3 w-3" aria-hidden="true" />
-                          Trending Specifications
+                          {t('trending')}
                         </span>
                         <div className="flex flex-wrap gap-2">
                           {TRENDING_SEARCHES.map((item) => (
@@ -515,7 +516,7 @@ export function SearchOverlay({
                       {/* Suggested Categories */}
                       <div className="space-y-3.5">
                         <span className="font-mono text-label uppercase text-foreground-subtle">
-                          {'01 — 06 // DEPARTMENTS'}
+                          {t('departments')}
                         </span>
                         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-1">
                           {initialCategories.map((cat) => (
@@ -547,14 +548,14 @@ export function SearchOverlay({
                       <div className="flex items-center justify-between border-b border-border pb-3">
                         <span className="inline-flex items-center gap-2 font-mono text-label uppercase text-foreground-subtle">
                           <Sparkles className="h-3 w-3 text-accent" />
-                          {'CURATED REFERENCE INSTRUMENTS'}
+                          {t('featured')}
                         </span>
                         <Link
                           href="/shop"
                           onClick={onClose}
                           className="inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.12em] text-foreground hover:text-accent"
                         >
-                          <span>View Complete Archive</span>
+                          <span>{t('viewAll')}</span>
                           <ArrowRight className="h-3 w-3" />
                         </Link>
                       </div>
@@ -630,10 +631,7 @@ export function SearchOverlay({
                                     />
                                   ))}
                                   <span className="ms-1 font-mono text-[10px] text-foreground-subtle">
-                                    {product.colors.length}{' '}
-                                    {product.colors.length === 1
-                                      ? 'Finish'
-                                      : 'Finishes'}
+                                    {t('finishes', { count: product.colors.length })}
                                   </span>
                                 </div>
 
@@ -643,8 +641,8 @@ export function SearchOverlay({
                                     onClick={() => toggleWishlist(product)}
                                     aria-label={
                                       saved
-                                        ? `Remove ${product.name} from archive`
-                                        : `Save ${product.name} to archive`
+                                        ? t('removeFromWishlist', { name: product.name })
+                                        : t('saveToWishlist', { name: product.name })
                                     }
                                     className={cn(
                                       'flex h-7 w-7 items-center justify-center border transition-colors',
@@ -668,7 +666,7 @@ export function SearchOverlay({
                                     className="inline-flex h-7 items-center gap-1.5 border border-foreground bg-foreground px-2.5 font-mono text-[10px] uppercase tracking-[0.12em] text-background transition-opacity hover:opacity-90"
                                   >
                                     <ShoppingBag className="h-3 w-3" />
-                                    <span>Allocate</span>
+                                    <span>{t('addToBag')}</span>
                                   </button>
                                 </div>
                               </div>
@@ -688,7 +686,7 @@ export function SearchOverlay({
                       {results.categories.length > 0 && (
                         <div className="space-y-3">
                           <TechnicalCode>
-                            {`MATCHED DEPARTMENTS [${results.categories.length}]`}
+                            {t('matchedCategories', { count: results.categories.length })}
                           </TechnicalCode>
                           <div className="space-y-2">
                             {results.categories.map((cat) => (
@@ -719,7 +717,7 @@ export function SearchOverlay({
                       {results.collections.length > 0 && (
                         <div className="space-y-3">
                           <TechnicalCode>
-                            {`CURATED EDITIONS [${results.collections.length}]`}
+                            {t('matchedCollections', { count: results.collections.length })}
                           </TechnicalCode>
                           <div className="space-y-2">
                             {results.collections.map((col) => (
@@ -747,7 +745,7 @@ export function SearchOverlay({
                       {results.articles.length > 0 && (
                         <div className="space-y-3">
                           <TechnicalCode>
-                            {`JOURNAL MONOGRAPHS [${results.articles.length}]`}
+                            {t('matchedArticles', { count: results.articles.length })}
                           </TechnicalCode>
                           <div className="space-y-2">
                             {results.articles.map((art) => (
@@ -777,7 +775,7 @@ export function SearchOverlay({
                     <div className="space-y-4 lg:col-span-8">
                       <div className="flex items-center justify-between border-b border-border pb-3">
                         <TechnicalCode>
-                          {`MATCHED INSTRUMENTS [${results.products.length}]`}
+                          {t('matchedProducts', { count: results.products.length })}
                         </TechnicalCode>
                         <Link
                           href={`/shop?query=${encodeURIComponent(query)}`}
@@ -787,15 +785,14 @@ export function SearchOverlay({
                           }}
                           className="inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.12em] text-foreground hover:text-accent"
                         >
-                          <span>Open in Storefront Filter</span>
+                          <span>{t('openInShop')}</span>
                           <ArrowRight className="h-3 w-3" />
                         </Link>
                       </div>
 
                       {results.products.length === 0 ? (
                         <p className="py-8 text-small text-foreground-muted">
-                          No hardware instruments matched directly, but see the
-                          matching departments or monographs on the left.
+                          {t('noProductsHint')}
                         </p>
                       ) : (
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -863,7 +860,7 @@ export function SearchOverlay({
                                     className="inline-flex h-7 items-center gap-1.5 border border-foreground bg-foreground px-2.5 font-mono text-[10px] uppercase tracking-[0.12em] text-background hover:opacity-90"
                                   >
                                     <ShoppingBag className="h-3 w-3" />
-                                    <span>Allocate</span>
+                                    <span>{t('addToBag')}</span>
                                   </button>
                                 </div>
                               </div>

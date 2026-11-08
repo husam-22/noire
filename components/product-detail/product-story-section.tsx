@@ -2,6 +2,7 @@ import React from 'react';
 import { Container, Section } from '@/components/layout';
 import { Reveal, ImageReveal } from '@/components/motion';
 import { Eyebrow, TechnicalCode } from '@/components/ui';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 import type { Product } from '@/types';
 
@@ -10,6 +11,7 @@ interface ProductStorySectionProps {
 }
 
 export function ProductStorySection({ product }: ProductStorySectionProps) {
+  const t = useTranslations('productDetail.story');
   return (
     <Section
       id="editorial-story"
@@ -23,13 +25,13 @@ export function ProductStorySection({ product }: ProductStorySectionProps) {
         <Reveal className="mb-16 grid grid-cols-1 gap-8 border-b border-border pb-12 lg:grid-cols-12 lg:gap-12">
           <div className="space-y-4 lg:col-span-4">
             <Eyebrow index="01" tone="accent">
-              DESIGN MONOGRAPH
+              {t('eyebrow')}
             </Eyebrow>
             <TechnicalCode className="block">
-              {product.modelNumber} {'//'} ARCHIVAL ESSAY
+              {t('code', { model: product.modelNumber })}
             </TechnicalCode>
             <p className="font-mono text-xs uppercase tracking-[0.14em] text-foreground-muted">
-              {product.designedIn} · {product.releaseYear} EDITION
+              {t('edition', { origin: product.designedIn, year: product.releaseYear })}
             </p>
           </div>
 
@@ -84,7 +86,7 @@ export function ProductStorySection({ product }: ProductStorySectionProps) {
                     <div className="border border-border bg-surface p-3 sm:p-4">
                       <div className="mb-2.5 flex items-center justify-between font-mono text-[10px] uppercase tracking-[0.14em] text-foreground-muted">
                         <span>{block.eyebrow}</span>
-                        <span>FIG 0{index + 1} {'//'} STUDIO STUDY</span>
+                        <span>{t('figure', { index: index + 1 })}</span>
                       </div>
 
                       <ImageReveal className="aspect-[16/11] w-full bg-surface-muted">

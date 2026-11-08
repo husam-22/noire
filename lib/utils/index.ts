@@ -62,9 +62,9 @@ export function formatCompactNumber(value: number, isCurrency = false): string {
 /**
  * Formats ISO dates into editorial format (e.g., "October 14, 2026").
  */
-export function formatDate(isoString: string): string {
+export function formatDate(isoString: string, locale = 'en-US'): string {
   try {
-    return new Intl.DateTimeFormat('en-US', {
+    return new Intl.DateTimeFormat(locale, {
       month: 'long',
       day: 'numeric',
       year: 'numeric',

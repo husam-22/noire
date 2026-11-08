@@ -1,5 +1,6 @@
 import React, { Suspense } from 'react';
 import type { Metadata } from 'next';
+import { getTranslations } from 'next-intl/server';
 import {
   getCategories,
   getCollections,
@@ -12,11 +13,13 @@ import { QuickViewModal } from '@/components/product';
 import { ShopExperience } from '@/components/shop';
 import ShopLoading from './loading';
 
-export const metadata: Metadata = {
-  title: 'The Instrument Archive — Shop All | NOIRÉ',
-  description:
-    'Explore NOIRÉ’s complete archive of acoustic instruments, architectural lighting, desk systems, tactile mechanical input, and nomadic field hardware.',
-};
+export async function generateMetadata({ params }: { params: { locale: string } }): Promise<Metadata> {
+  const t = await getTranslations({ locale: params.locale, namespace: 'pages.shop' });
+  return {
+    title: t('title'),
+    description: t('description'),
+  };
+}
 
 export default async function NoireShopPage() {
   const [

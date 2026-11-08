@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useLocale, useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { useRouter } from '@/i18n/navigation';
 import { ArrowLeft, Save } from 'lucide-react';
@@ -59,6 +60,9 @@ interface AdminProductEditorProps {
 
 export function AdminProductEditor({ initialProduct, categories }: AdminProductEditorProps) {
   const router = useRouter();
+  const t = useTranslations('admin.productEditor');
+  const tPrim = useTranslations('admin.primitives');
+  const locale = useLocale();
   const { addToast } = useToast();
   const isNewRoute = initialProduct === null;
   const [product, setProduct] = useState<Product | null>(
@@ -77,19 +81,19 @@ export function AdminProductEditor({ initialProduct, categories }: AdminProductE
     if (!product) return;
     const normalizedSlug = product.slug.trim().toLowerCase();
     if (!product.name.trim() || !product.sku.trim() || !product.modelNumber.trim() || !normalizedSlug) {
-      setSaveError('Name, slug, SKU, and model number are required.');
+      setSaveError(t('errRequired'));
       return;
     }
     if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(normalizedSlug)) {
-      setSaveError('Use lowercase letters, numbers, and hyphens for the product slug.');
+      setSaveError(t('errSlug'));
       return;
     }
     if (!Number.isFinite(product.price) || product.price < 0 || !Number.isSafeInteger(product.inventoryCount) || product.inventoryCount < 0) {
-      setSaveError('Price and stock quantity must be valid non-negative numbers.');
+      setSaveError(t('errNumbers'));
       return;
     }
     if (product.status === 'active' && product.price <= 0) {
-      setSaveError('An active product needs a price greater than zero. Keep it as a draft until pricing is set.');
+      setSaveError(t('errActivePrice'));
       return;
     }
 
@@ -99,39 +103,39 @@ export function AdminProductEditor({ initialProduct, categories }: AdminProductE
     setIsSaving(false);
     if (!result.ok) {
       setSaveError(result.error);
-      addToast({ type: 'error', title: 'Could not save product', description: result.error });
+      addToast({ type: 'error', title: t('toastError'), description: result.error });
       return;
     }
     const saved = result.data;
     setProduct(saved);
-    addToast({ type: 'success', title: isNewRoute ? 'Product created' : 'Product saved', description: saved.status === 'active' ? `${saved.name} is live on the storefront.` : `${saved.name} is saved as ${saved.status}.` });
+    addToast({ type: 'success', title: isNewRoute ? t('created') : t('saved'), description: saved.status === 'active' ? t('liveBody', { name: saved.name }) : t('savedBody', { name: saved.name, status: tPrim(`productStatus.${saved.status}`) }) });
     if (isNewRoute) router.replace(`/admin/products/${encodeURIComponent(saved.id)}`);
     router.refresh();
   };
 
   if (!product) {
-    return <><AdminPageHeader eyebrow="OPERATIONS // 02 · PRODUCT" title="Product not found" description="No product matches this identifier." /><EmptyState code="CATALOG // NOT FOUND" title="No product found." description="It may have been removed, or the link may be incomplete." primaryAction={<Link href="/admin/products" className="inline-flex min-h-11 items-center border border-foreground bg-foreground px-4 font-mono text-[9px] uppercase tracking-[0.12em] text-background">Back to products</Link>} /></>;
+    return <><AdminPageHeader eyebrow={t('nfEyebrow')} title={t('nfTitle')} description={t('nfDescription')} /><EmptyState code={t('nfCode')} title={t('nfEmptyTitle')} description={t('nfEmptyDescription')} primaryAction={<Link href="/admin/products" className="inline-flex min-h-11 items-center border border-foreground bg-foreground px-4 font-mono text-[9px] uppercase tracking-[0.12em] text-background">{t('backToProducts')}</Link>} /></>;
   }
 
   return (
     <main id="main-content" className="min-w-0">
       <AdminPageHeader
-        eyebrow={`OPERATIONS // 02 · ${product.id === '__new__' ? 'NEW PRODUCT' : product.modelNumber}`}
-        title={product.id === '__new__' ? 'New product' : product.name}
-        description="Edit the product's catalog details, pricing, stock, media and story. Saving publishes the change to the storefront immediately."
-        actions={<Link href="/admin/products" className="inline-flex min-h-11 items-center gap-2 border border-border bg-surface px-4 font-mono text-[9px] uppercase tracking-[0.12em] text-foreground-muted hover:border-foreground hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground"><ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" /> All products</Link>}
+        eyebrow={t('eyebrow', { reference: product.id === '__new__' ? t('newProductCode') : product.modelNumber })}
+        title={product.id === '__new__' ? t('newProduct') : product.name}
+        description={t('description')}
+        actions={<Link href="/admin/products" className="inline-flex min-h-11 items-center gap-2 border border-border bg-surface px-4 font-mono text-[9px] uppercase tracking-[0.12em] text-foreground-muted hover:border-foreground hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground"><ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" /> {t('allProducts')}</Link>}
       />
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-y border-border py-3 font-mono text-[8px] uppercase tracking-[0.11em] text-foreground-subtle">
-        <span>Record // {product.id === '__new__' ? 'Not yet assigned' : product.id}</span>
-        <span>Modified // {product.updatedAt ? new Date(product.updatedAt).toLocaleString('en-GB') : 'Not yet saved'}</span>
+        <span>{t('record', { id: product.id === '__new__' ? t('notAssigned') : product.id })}</span>
+        <span>{t('modifiedAt', { date: product.updatedAt ? new Date(product.updatedAt).toLocaleString(locale) : t('notSaved') })}</span>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <AdminProductEditorFields product={product} categories={categories} onUpdate={updateProduct} />
         {saveError && <p role="alert" className="border border-danger/30 bg-danger-surface px-4 py-3 text-small text-danger">{saveError}</p>}
         <div className="sticky bottom-0 z-20 -mx-4 flex flex-wrap items-center justify-between gap-3 border-t border-border bg-background/95 px-4 py-3 backdrop-blur-sm sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
-          <span className="hidden items-center gap-2 sm:inline-flex"><TechnicalCode>{product.status === 'active' ? 'Live on storefront' : `Status // ${product.status}`}</TechnicalCode></span>
-          <div className="flex w-full justify-end gap-2 sm:w-auto"><Link href="/admin/products" className="inline-flex min-h-11 items-center border border-border px-4 font-mono text-[9px] uppercase tracking-[0.12em] text-foreground-muted hover:border-foreground">Cancel</Link><Button type="submit" variant="primary" isLoading={isSaving} leftIcon={<Save className="h-3.5 w-3.5" aria-hidden="true" />}>{product.id === '__new__' ? 'Create product' : 'Save changes'}</Button></div>
+          <span className="hidden items-center gap-2 sm:inline-flex"><TechnicalCode>{product.status === 'active' ? t('live') : t('statusChip', { status: tPrim(`productStatus.${product.status}`) })}</TechnicalCode></span>
+          <div className="flex w-full justify-end gap-2 sm:w-auto"><Link href="/admin/products" className="inline-flex min-h-11 items-center border border-border px-4 font-mono text-[9px] uppercase tracking-[0.12em] text-foreground-muted hover:border-foreground">{t('cancel')}</Link><Button type="submit" variant="primary" isLoading={isSaving} leftIcon={<Save className="h-3.5 w-3.5" aria-hidden="true" />}>{product.id === '__new__' ? t('create') : t('save')}</Button></div>
         </div>
       </form>
     </main>

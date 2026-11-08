@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { Container } from '@/components/layout';
 import { ErrorState } from '@/components/ui';
@@ -11,18 +12,19 @@ export default function OrderConfirmationError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const t = useTranslations('errors');
   return (
     <main id="main-content" className="bg-background py-12 text-foreground sm:py-16">
       <Container size="wide">
         <ErrorState
-          code="ERR // ORDER-RECORD-SYNC"
-          title="The allocation record could not be loaded."
-          description="The record may be temporarily unavailable. Retry, return to the archive, or review your allocation bag; opening this route does not alter payment or inventory."
+          code={t('orderConfirmation.code')}
+          title={t('orderConfirmation.title')}
+          description={t('orderConfirmation.description')}
           onRetry={reset}
-          retryLabel="Retry order record"
+          retryLabel={t('orderConfirmation.retry')}
           secondaryAction={
             <Link href="/shop" className="inline-flex min-h-11 items-center border-b border-foreground font-mono text-[10px] uppercase tracking-[0.12em]">
-              Continue shopping
+              {t('orderConfirmation.back')}
             </Link>
           }
         />

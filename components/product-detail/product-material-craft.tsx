@@ -1,5 +1,6 @@
 import React from 'react';
 import { Layers, ShieldCheck, Compass } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { Container, Section } from '@/components/layout';
 import { Reveal, StaggerContainer, StaggerItem } from '@/components/motion';
 import { Eyebrow, TechnicalCode } from '@/components/ui';
@@ -10,6 +11,7 @@ interface ProductMaterialCraftProps {
 }
 
 export function ProductMaterialCraft({ product }: ProductMaterialCraftProps) {
+  const t = useTranslations('productDetail.materials');
   if (!product.materials || product.materials.length === 0) {
     return null;
   }
@@ -28,25 +30,24 @@ export function ProductMaterialCraft({ product }: ProductMaterialCraftProps) {
           <div className="space-y-3 lg:col-span-7">
             <div className="flex flex-wrap items-center gap-3">
               <Eyebrow index="02" tone="accent">
-                MATERIALITY &amp; SURFACE ARCHITECTURE
+                {t('eyebrow')}
               </Eyebrow>
-              <TechnicalCode>BOM // {product.sku}</TechnicalCode>
+              <TechnicalCode>{t('bom', { sku: product.sku })}</TechnicalCode>
             </div>
             <h2
               id="pdp-material-heading"
               className="font-display text-h1 tracking-tighter text-foreground"
             >
-              Structural Metallurgy &amp;{' '}
+              {t('title')}{' '}
               <span className="font-normal italic text-foreground-muted">
-                Tactile Permanence.
+                {t('titleAccent')}
               </span>
             </h2>
           </div>
 
           <div className="lg:col-span-5 lg:text-end">
             <p className="ms-auto max-w-md text-small leading-relaxed text-foreground-muted">
-              Every substrate is selected for physical density, acoustic
-              neutrality, and long-term resistance to oxidation and wear.
+              {t('intro')}
             </p>
           </div>
         </Reveal>
@@ -61,7 +62,7 @@ export function ProductMaterialCraft({ product }: ProductMaterialCraftProps) {
               >
                 <div className="flex items-center justify-between border-b border-border pb-3 font-mono text-[10px] uppercase tracking-[0.16em]">
                   <span className="text-accent">
-                    SUBSTRATE 0{idx + 1}
+                    {t('substrate', { index: idx + 1 })}
                   </span>
                   <Layers
                     className="h-3.5 w-3.5 text-foreground-subtle"
@@ -76,8 +77,8 @@ export function ProductMaterialCraft({ product }: ProductMaterialCraftProps) {
                 </div>
 
                 <div className="flex items-center justify-between border-t border-border/70 pt-3 font-mono text-[10px] uppercase tracking-[0.12em] text-foreground-subtle">
-                  <span>SPECIFIED FOR {product.modelNumber.split(' // ')[0]}</span>
-                  <span>VERIFIED</span>
+                  <span>{t('specifiedFor', { model: product.modelNumber.split(' // ')[0] })}</span>
+                  <span>{t('verified')}</span>
                 </div>
               </StaggerItem>
             ))}
@@ -91,10 +92,10 @@ export function ProductMaterialCraft({ product }: ProductMaterialCraftProps) {
             <div className="space-y-6">
               <div className="border-b border-border pb-4">
                 <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-accent">
-                  SURFACE FINISH SPECIFICATIONS
+                  {t('finishesLabel')}
                 </span>
                 <h3 className="mt-1 font-display text-h3 tracking-tight text-foreground">
-                  Available Anodized &amp; Natural Finishes
+                  {t('finishesTitle')}
                 </h3>
               </div>
 
@@ -136,7 +137,7 @@ export function ProductMaterialCraft({ product }: ProductMaterialCraftProps) {
                 />
                 <div>
                   <span className="block font-mono text-[10px] uppercase tracking-[0.12em] text-foreground">
-                    DESIGN ORIGIN
+                    {t('origin')}
                   </span>
                   <span className="text-caption text-foreground-muted">
                     {product.designedIn} ({product.releaseYear})
@@ -151,10 +152,10 @@ export function ProductMaterialCraft({ product }: ProductMaterialCraftProps) {
                 />
                 <div>
                   <span className="block font-mono text-[10px] uppercase tracking-[0.12em] text-foreground">
-                    DURABILITY GUARANTEE
+                    {t('warranty')}
                   </span>
                   <span className="text-caption text-foreground-muted">
-                    {product.warrantyYears}-Year Structural Coverage
+                    {t('warrantyValue', { years: product.warrantyYears })}
                   </span>
                 </div>
               </div>

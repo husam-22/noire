@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { CheckCircle2 } from 'lucide-react';
+import { useLocale, useTranslations } from 'next-intl';
 import { Container, Section } from '@/components/layout';
 import { Reveal } from '@/components/motion';
 import {
@@ -22,6 +23,8 @@ export function ProductFaqReviewsSection({
   product,
   reviews,
 }: ProductFaqReviewsSectionProps) {
+  const t = useTranslations('productDetail.reviews');
+  const locale = useLocale();
   const hasFaqs = Boolean(product.faqs && product.faqs.length > 0);
   const hasReviews = Boolean(reviews && reviews.length > 0);
 
@@ -51,14 +54,14 @@ export function ProductFaqReviewsSection({
             <div className="space-y-6">
               <div className="space-y-3 border-b border-border pb-6">
                 <Eyebrow index="04" tone="accent">
-                  CLIENT REPORTS
+                  {t('eyebrow')}
                 </Eyebrow>
                 <h2 className="font-display text-h2 tracking-tight text-foreground">
-                  Client reviews
+                  {t('title')}
                 </h2>
                 {hasReviews && (
                   <p className="text-small text-foreground-muted">
-                    Published reports for {product.modelNumber}.
+                    {t('published', { model: product.modelNumber })}
                   </p>
                 )}
               </div>
@@ -78,7 +81,7 @@ export function ProductFaqReviewsSection({
                               className="h-3 w-3"
                               aria-hidden="true"
                             />
-                            <span>Verified Serial Owner</span>
+                            <span>{t('verified')}</span>
                           </span>
                         )}
                       </div>
@@ -102,11 +105,11 @@ export function ProductFaqReviewsSection({
                           )}
                           <span> ({review.authorLocation})</span>
                         </div>
-                        <span>{formatDate(review.createdAt)}</span>
+                        <span>{formatDate(review.createdAt, locale)}</span>
                       </div>
 
                       <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-accent">
-                        CONFIGURATION // {review.variantPurchased}
+                        {t('configuration', { variant: review.variantPurchased })}
                       </div>
                     </article>
                   ))}
@@ -114,10 +117,10 @@ export function ProductFaqReviewsSection({
               ) : (
                 <div className="border border-border bg-surface p-6">
                   <TechnicalCode className="block">
-                    REVIEWS // NONE YET
+                    {t('noneCode')}
                   </TechnicalCode>
                   <p className="mt-2 text-small leading-relaxed text-foreground-muted">
-                    This instrument has no verified client reviews yet.
+                    {t('none')}
                   </p>
                 </div>
               )}
@@ -133,15 +136,15 @@ export function ProductFaqReviewsSection({
               <div className="space-y-6">
                 <div className="space-y-3 border-b border-border pb-6">
                   <Eyebrow index="05" tone="accent">
-                    TECHNICAL INQUIRIES
+                    {t('faqEyebrow')}
                   </Eyebrow>
                   <h2
                     id="pdp-faq-heading"
                     className="font-display text-h2 tracking-tight text-foreground"
                   >
-                    Frequently Asked{' '}
+                    {t('faqTitle')}{' '}
                     <span className="font-normal italic text-foreground-muted">
-                      Engineering Questions.
+                      {t('faqTitleAccent')}
                     </span>
                   </h2>
                 </div>

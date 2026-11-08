@@ -1,6 +1,7 @@
 'use client';
 
 import type { CartItem, Collection, Product, ProductColorVariant, ProductOptionVariant } from '@/types';
+import { useTranslations } from 'next-intl';
 import { WishlistItem } from '@/components/wishlist/wishlist-item';
 
 interface WishlistGridProps {
@@ -25,19 +26,20 @@ export function WishlistGrid({
   onQuickInspect,
   onAllocate,
 }: WishlistGridProps) {
+  const t = useTranslations('wishlist.grid');
   const collectionById = new Map(collections.map((collection) => [collection.id, collection]));
 
   return (
     <section aria-labelledby="saved-instruments-heading" className="space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-3 border-b border-border pb-3">
         <div>
-          <p className="font-mono text-[9px] uppercase tracking-[0.15em] text-accent">Inventory // 01</p>
+          <p className="font-mono text-[9px] uppercase tracking-[0.15em] text-accent">{t('code')}</p>
           <h2 id="saved-instruments-heading" className="mt-1 font-display text-2xl text-foreground sm:text-3xl">
-            Saved instruments
+            {t('title')}
           </h2>
         </div>
         <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-foreground-subtle">
-          {String(products.length).padStart(2, '0')} RECORD{products.length === 1 ? '' : 'S'}
+          {t('count', { count: products.length })}
         </p>
       </div>
 

@@ -91,7 +91,7 @@ export function JournalSection({ articles }: JournalSectionProps) {
                   setSelectedArticle(leadArticle);
                 }
               }}
-              aria-label={`Read monograph: ${leadArticle.title}`}
+              aria-label={t('readLead', { title: leadArticle.title })}
               className="relative aspect-[16/10] w-full cursor-pointer overflow-hidden border-b border-border bg-surface-muted"
             >
               <img
@@ -172,7 +172,7 @@ export function JournalSection({ articles }: JournalSectionProps) {
                         setSelectedArticle(article);
                       }
                     }}
-                    aria-label={`Read ${article.title}`}
+                    aria-label={t('read', { title: article.title })}
                     className="col-span-4 aspect-[4/5] cursor-pointer overflow-hidden border border-border bg-surface-muted"
                   >
                     <img

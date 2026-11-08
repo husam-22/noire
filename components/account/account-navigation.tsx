@@ -1,4 +1,5 @@
 import { Link } from '@/i18n/navigation';
+import { useTranslations } from 'next-intl';
 import { ArrowUpRight } from 'lucide-react';
 
 export type AccountSectionId =
@@ -8,12 +9,12 @@ export type AccountSectionId =
   | 'client-profile'
   | 'private-dispatch';
 
-const SECTION_ITEMS: Array<{ id: AccountSectionId; number: string; label: string }> = [
-  { id: 'overview', number: '01', label: 'Overview' },
-  { id: 'order-archive', number: '02', label: 'Order Archive' },
-  { id: 'delivery-register', number: '04', label: 'Delivery Register' },
-  { id: 'client-profile', number: '05', label: 'Client Profile' },
-  { id: 'private-dispatch', number: '06', label: 'Private Dispatch' },
+const SECTION_ITEMS: Array<{ id: AccountSectionId; number: string; labelKey: 'overview' | 'orders' | 'addresses' | 'profile' | 'preferences' }> = [
+  { id: 'overview', number: '01', labelKey: 'overview' },
+  { id: 'order-archive', number: '02', labelKey: 'orders' },
+  { id: 'delivery-register', number: '04', labelKey: 'addresses' },
+  { id: 'client-profile', number: '05', labelKey: 'profile' },
+  { id: 'private-dispatch', number: '06', labelKey: 'preferences' },
 ];
 
 export function AccountNavigation({
@@ -21,13 +22,14 @@ export function AccountNavigation({
 }: {
   activeSection: AccountSectionId;
 }) {
+  const t = useTranslations('account.nav');
   return (
     <nav
-      aria-label="Private client dossier sections"
+      aria-label={t('label')}
       className="w-full min-w-0 border-b border-border bg-background lg:sticky lg:top-24 lg:self-start lg:border-b-0"
     >
       <p className="mb-2 hidden font-mono text-[9px] uppercase tracking-[0.14em] text-foreground-subtle lg:block">
-        Dossier index
+        {t('index')}
       </p>
       <ol className="no-scrollbar flex max-w-full gap-1 overflow-x-auto py-2 lg:flex-col lg:gap-0 lg:overflow-visible lg:border-t lg:border-border lg:py-0">
         {SECTION_ITEMS.slice(0, 2).map((item) => (
@@ -39,10 +41,10 @@ export function AccountNavigation({
           <Link
             href="/wishlist"
             className="group inline-flex min-h-11 items-center gap-2 border border-transparent px-3 font-mono text-[9px] uppercase tracking-[0.1em] text-foreground-muted transition-colors hover:border-border hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground lg:min-h-12 lg:w-full lg:justify-between lg:border-b lg:border-x-0 lg:px-2"
-            aria-label="Open saved archive"
+            aria-label={t('openWishlist')}
           >
             <span className="text-foreground-subtle">03</span>
-            <span>Saved Archive</span>
+            <span>{t('wishlist')}</span>
             <ArrowUpRight className="h-3 w-3 shrink-0 text-foreground-subtle" aria-hidden="true" />
           </Link>
         </li>
@@ -63,6 +65,7 @@ function SectionLink({
   item: (typeof SECTION_ITEMS)[number];
   active: boolean;
 }) {
+  const t = useTranslations('account.nav');
   return (
     <a
       href={`#${item.id}`}
@@ -72,7 +75,7 @@ function SectionLink({
       <span className={active ? 'text-accent' : 'text-foreground-subtle'}>
         {item.number}
       </span>
-      <span className="whitespace-nowrap">{item.label}</span>
+      <span className="whitespace-nowrap">{t(item.labelKey)}</span>
       <span
         aria-hidden="true"
         className={`hidden h-1.5 w-1.5 rounded-full bg-accent lg:block ${active ? 'opacity-100' : 'opacity-0'}`}
